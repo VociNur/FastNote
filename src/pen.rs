@@ -1,11 +1,18 @@
 use egui::Color32;
+use serde::{Deserialize, Serialize};
 
 
-
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Pen{
     pub color: Color32,
     pub size: u32,
     pub erase: bool,
+}
+
+impl Default for Pen{
+    fn default() -> Self {
+        Self { color: Default::default(), size: Default::default(), erase: Default::default() }
+    }
 }
 
 

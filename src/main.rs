@@ -1,9 +1,8 @@
-use Test_egui::app::App;
-use Test_egui::icons::Icons;
-use eframe::CreationContext;
+use FastNote::app::App;
+use FastNote::icons::Icons;
 use egui::TextureHandle;
 use std::io::Cursor;
-use std::path::Path;
+use std::path::{self, Path};
 fn main() -> eframe::Result {
     env_logger::init();
 
@@ -20,35 +19,27 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "Egui test",
+        "Fast Note",
         native_options,
         Box::new(|cc|{
             let icons = Icons{
-                pen: load(&cc.egui_ctx, Path::new("assets/ribbon/pen_icon.png")),
-                open_folder: load(&cc.egui_ctx, Path::new("assets/menu/file/open_folder.png")),
+                pen: load(&cc.egui_ctx, &Path::new(env!("CARGO_MANIFEST_DIR"))
+    .join("src/assets/ribbon/pen_icon.png")),
+                eraser: load(&cc.egui_ctx, &Path::new(env!("CARGO_MANIFEST_DIR"))
+    .join("src/assets/ribbon/eraser_icon.png")),
+                open_folder: load(&cc.egui_ctx, &Path::new(env!("CARGO_MANIFEST_DIR"))
+    .join("src/assets/menu/file/open_folder.png")),
+                notebook: load(&cc.egui_ctx, &Path::new(env!("CARGO_MANIFEST_DIR"))
+    .join("src/assets/menu/file/notebook.png")),
             };
             Ok(Box::new(App::new(cc, icons)))
         }),
     )
 }
-            // let bytes = std::fs::read("assets/ribbon/pen_icon.png")?;
-            // let img = image::ImageReader::new(Cursor::new(bytes))
-            //     .with_guessed_format()?
-            //     .decode()?; // -> DynamicImage
-
-            // let rgba = img.to_rgba8();
-            // let size = [rgba.width() as usize, rgba.height() as usize];
-
-            // let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba.as_raw());
-            // let texture = cc.egui_ctx.load_texture(
-            //     "icon",
-            //     color_image,
-            //     egui::TextureOptions::LINEAR,
-            // );
 pub fn load(ctx: &egui::Context, path: &Path)->TextureHandle
 {
     
-    let bytes = std::fs::read(path).unwrap();
+    let bytes = std::fs::read(path).expect(&format!("Path not found {:?} /// {:?}", path, path::absolute(path)));//, path::absolute(path)
     let img = image::ImageReader::new(Cursor::new(bytes))
         .with_guessed_format().unwrap()
         .decode().unwrap(); // -> DynamicImage

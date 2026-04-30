@@ -8,7 +8,8 @@ pub struct Icons{
     pub open_folder: egui::TextureHandle, 
     //Draw
     pub pen: egui::TextureHandle,
-
+    pub eraser: egui::TextureHandle,
+    pub notebook: egui::TextureHandle,
     
 }
 // impl Icons {
