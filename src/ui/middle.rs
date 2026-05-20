@@ -1,11 +1,9 @@
 
 
-use std::path::{Path, PathBuf};
 
-use eframe::Frame;
-use egui::{Button, Color32, Panel, RichText, SidePanel};
+use egui::{Button, Panel, RichText};
 
-use crate::{app::App, state::{Menu, State}, ui::{menu::draw_menu, ribbon::draw_ribbon}, user_project::UserProject};
+use crate::{app::App, state::Menu, user_project::UserProject};
 
 pub fn draw_middle(ui: &mut egui::Ui, app: &mut App){
     
@@ -97,14 +95,6 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &App, project: &UserProject){
                 });
     
 }
-
-// pub fn show_tree_notebook(ui: &mut egui::Ui, app: &App, path: PathBuf){
-//     path.
-//     if path.is_dir(){
-//         egui::CollapsingHeader::new(format!("{:?}", path.to_str()));
-
-//     }
-// }
 
 fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &App) {
     for entry in std::fs::read_dir(dir).into_iter().flatten().filter_map(|e| e.ok()) {

@@ -1,6 +1,6 @@
-use egui::{Button, Color32, Image, RichText};
+use egui::{Button, RichText};
 
-use crate::{app::App, pen::{DEFAULT_ERASER, DEFAULT_PEN}, state::{Menu, State}};
+use crate::{app::App, pen::{DEFAULT_ERASER, DEFAULT_PEN}, state::Menu};
     
 pub fn draw_ribbon(ui: &mut egui::Ui, app: &mut App){
     match app.state.get_menu() {
@@ -24,12 +24,6 @@ pub fn draw_draw_ribbon(ui: &mut egui::Ui, app: &mut App){
     
     let avail = ui.available_width();
     let target_w = avail * 0.98;
-    let x_offset = (avail - target_w) / 2.0; // centrer
-    // Positionner la frame dans un rectangle centré
-    let rect = egui::Rect::from_min_size(
-        ui.min_rect().min + egui::vec2(x_offset, 0.0),
-        egui::vec2(target_w, 0.0),
-    );
 
     ui.vertical_centered(|ui| {
         ui.set_width(target_w);

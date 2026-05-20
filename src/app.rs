@@ -1,6 +1,5 @@
 use std::path::{self, Path, PathBuf};
 
-use eframe::wgpu::hal::OpenDevice;
 use egui::Color32;
 
 use crate::{edition::open_edition_mode, icons::Icons, state::State, ui::ui::draw_gui, user_project::UserProject};
