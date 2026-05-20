@@ -1,4 +1,4 @@
-#![warn(clippy::all, rust_2018_idioms)]
+// #![warn(clippy::all, rust_2018_idioms)]
 
 // use egui::Color32;
 
@@ -10,6 +10,7 @@ pub mod icons;
 pub mod pen;
 pub mod user_project;
 pub mod edition;
+pub mod stylet;
 
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");

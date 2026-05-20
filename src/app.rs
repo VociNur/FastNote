@@ -1,13 +1,16 @@
-use std::path::{self, Path, PathBuf};
+use std::{path::{self, Path, PathBuf}, sync::{Arc, Mutex}};
 
-use egui::Color32;
+use egui::{Color32};
 
-use crate::{edition::open_edition_mode, icons::Icons, state::State, ui::ui::draw_gui, user_project::UserProject};
+use crate::{edition::open_edition_mode, icons::Icons, state::State, stylet::spawn_pen_thread, ui::ui::draw_gui, user_project::UserProject };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
     pub state: State,
     pub icons: Icons,
+    pub window_state: Arc<Mutex<WindowState>>,
+    pub pen_state: Arc<Mutex<PenState>>,
+    pub last_pen_state: Option<PenState>,
 }
 
 pub fn load_state() -> State {
@@ -32,11 +35,27 @@ fn save_path() -> std::path::PathBuf {
     path
 }
 
+#[derive(Default, Clone)]
+pub struct PenState {
+    pub pos: egui::Pos2,
+    pub pressed: bool,
+}
+
+#[derive(Default, Clone)]
+pub struct WindowState {
+    pub pos: egui::Pos2,
+    pub ppp: f32,  // pixels_per_point
+}
 impl App {
     fn default(icons: Icons) -> Self {
         Self {
             state: load_state(),
             icons: icons,
+            window_state: Arc::new(Mutex::new(WindowState::default())),
+            pen_state: Arc::new(Mutex::new(PenState::default())),
+            last_pen_state: None,
+            
+            
         }
     }
     // Called once before the first frame.
@@ -51,7 +70,10 @@ impl App {
         // } else {
             // Default::default()
         // }
-        App::default(icons)
+        let app = App::default(icons);
+
+        spawn_pen_thread(Arc::clone(&app.pen_state), Arc::clone(&app.window_state));
+        app
     }
 
     pub fn open_project(&mut self, path: PathBuf){
@@ -107,6 +129,36 @@ impl eframe::App for App {
             let json = serde_json::to_string_pretty(&self.state).unwrap_or_default();
             println!("{}", json);
         }
+        let window_pos = ctx.input(|i| i.viewport().outer_rect)
+            .map(|r| r.min)
+            .unwrap_or_else(|| {println!("zero"); egui::Pos2::ZERO});
+        // let ppp = ctx.pixels_per_point();
+        
+        {
+            let mut w = self.window_state.lock().unwrap();
+            w.pos = window_pos;
+            // w.ppp = ppp;
+        };
+
+        
+        let pen_state = self.pen_state.lock().unwrap().clone();
+        let opt_last_pen_state = self.last_pen_state.take();
+        let mut events = vec![egui::Event::PointerMoved(pen_state.pos)];
+
+        if let Some(last_pen_state) = opt_last_pen_state && pen_state.pressed != last_pen_state.pressed {
+            if pen_state.pressed {
+                println!("clic à ({:.0}, {:.0})", pen_state.pos.x, pen_state.pos.y);
+            }
+            events.push(egui::Event::PointerButton {
+                pos: pen_state.pos,
+                button: egui::PointerButton::Primary,
+                pressed: pen_state.pressed,
+                modifiers: egui::Modifiers::default(),
+            });
+        }
+        self.last_pen_state = Some(pen_state);
+
+        ctx.input_mut(|i| i.events.extend(events));
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
