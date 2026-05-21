@@ -1,3 +1,4 @@
+use eframe::egui;
 use egui::Color32;
 use serde::{Deserialize, Serialize};
 

@@ -1,3 +1,4 @@
+use eframe::egui;
 use egui::{Button, RichText};
 
 use crate::{app::App, pen::{DEFAULT_ERASER, DEFAULT_PEN}, state::Menu};

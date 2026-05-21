@@ -1,4 +1,4 @@
-
+use eframe::egui;
 
 
 use egui::{Button, Panel, RichText};
@@ -6,14 +6,15 @@ use egui::{Button, Panel, RichText};
 use crate::{app::App, state::Menu, user_project::UserProject};
 
 pub fn draw_middle(ui: &mut egui::Ui, app: &mut App){
-    
-    egui::CentralPanel::default().show_inside(ui, |ui| {//.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
-        match app.state.get_menu(){
-            Menu::File => draw_file_menu_middle(ui, app),
-            Menu::Home => draw_home_menu_middle(ui, app),
-            _=>{}
-        }
-    });
+   
+    egui::Panel::left("left_panel").show_inside(ui, |ui| {//.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
+            match app.state.get_menu(){
+                Menu::File => draw_file_menu_middle(ui, app),
+                Menu::Home => draw_home_menu_middle(ui, app),
+                _=>{}
+            }
+        });
+
 }
 
 

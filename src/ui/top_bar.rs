@@ -1,4 +1,5 @@
-use crate::{app::App, state::State, ui::{menu::draw_menu, ribbon::draw_ribbon}};
+use eframe::egui;
+use crate::{app::App, ui::{menu::draw_menu, ribbon::draw_ribbon}};
 
 pub fn draw_top_bar(ui: &mut egui::Ui, app: &mut App){
     

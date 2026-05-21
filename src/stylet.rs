@@ -1,7 +1,7 @@
 
 use crate::app::{PenState, WindowState};
-use std::fs::{File, OpenOptions};
-use std::os::unix::{fs::OpenOptionsExt, io::{AsRawFd, FromRawFd, IntoRawFd, OwnedFd}};
+use std::fs::OpenOptions;
+use std::os::unix::{fs::OpenOptionsExt, io::{AsRawFd, OwnedFd}};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;

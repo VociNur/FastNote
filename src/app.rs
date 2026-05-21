@@ -1,6 +1,6 @@
-use std::{path::{self, Path, PathBuf}, sync::{Arc, Mutex}};
-
-use egui::{Color32};
+use std::{path::{self, PathBuf}, sync::{Arc, Mutex}};
+use eframe::egui::{self, Vec2};
+use egui::Color32;
 
 use crate::{edition::open_edition_mode, icons::Icons, state::State, stylet::spawn_pen_thread, ui::ui::draw_gui, user_project::UserProject };
 
@@ -11,6 +11,8 @@ pub struct App {
     pub window_state: Arc<Mutex<WindowState>>,
     pub pen_state: Arc<Mutex<PenState>>,
     pub last_pen_state: Option<PenState>,
+
+    pub clicks: Vec<Vec2>,
 }
 
 pub fn load_state() -> State {
@@ -54,6 +56,7 @@ impl App {
             window_state: Arc::new(Mutex::new(WindowState::default())),
             pen_state: Arc::new(Mutex::new(PenState::default())),
             last_pen_state: None,
+            clicks: vec![],
             
             
         }
@@ -148,6 +151,7 @@ impl eframe::App for App {
         if let Some(last_pen_state) = opt_last_pen_state && pen_state.pressed != last_pen_state.pressed {
             if pen_state.pressed {
                 println!("clic à ({:.0}, {:.0})", pen_state.pos.x, pen_state.pos.y);
+                self.clicks.push(Vec2::new(pen_state.pos.x, pen_state.pos.y));
             }
             events.push(egui::Event::PointerButton {
                 pos: pen_state.pos,

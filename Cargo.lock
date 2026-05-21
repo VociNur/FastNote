@@ -7,9 +7,10 @@ name = "FastNote"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "dirs",
  "eframe",
- "egui",
+ "egui-wgpu",
  "env_logger",
  "image",
  "input",

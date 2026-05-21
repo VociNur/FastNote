@@ -1,3 +1,4 @@
+use eframe::egui;
 use image::ImageReader;
 use std::{
     io::Cursor,

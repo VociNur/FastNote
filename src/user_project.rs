@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use eframe::egui;
+use std::path::PathBuf;
 
 use egui::Color32;
 use serde::{Deserialize, Serialize};

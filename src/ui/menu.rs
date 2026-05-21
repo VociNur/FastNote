@@ -1,6 +1,7 @@
+use eframe::egui;
 use egui::{Button, RichText};
 
-use crate::{app::App, state::{Menu, State}};
+use crate::{app::App, state::Menu};
 
 
 
