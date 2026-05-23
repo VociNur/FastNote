@@ -67,14 +67,15 @@ pub fn draw_file_menu_middle(ui: &mut egui::Ui, app: &mut App){
 
 //HOME
 pub fn draw_home_menu_middle(ui: &mut egui::Ui, app: &mut App){
+    let projects = app.state.opened_projects.clone();
     egui::ScrollArea::vertical().show(ui, |ui| {
-        app.state.opened_projects.iter().for_each(|p| {
+        projects.iter().for_each(|p| {
             show_notebook(ui , app, &p)
         });
     });
 }
 
-pub fn show_notebook(ui: &mut egui::Ui, app: &App, project: &UserProject){
+pub fn show_notebook(ui: &mut egui::Ui, app: &mut App, project: &UserProject){
                 egui::Frame {
                     
                     fill: app.state.theme.ribbon_bg,
@@ -97,7 +98,7 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &App, project: &UserProject){
     
 }
 
-fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &App) {
+fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &mut App) {
     for entry in std::fs::read_dir(dir).into_iter().flatten().filter_map(|e| e.ok()) {
         // println!("{:?}", entry.file_name());
         let path = entry.path();
@@ -128,6 +129,7 @@ fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &App) {
             let response_button = ui.add(button);
             if response_button.clicked(){
                 println!("Name opened: {:?}", name);
+                app.open_file(path); 
             }
         }
     }

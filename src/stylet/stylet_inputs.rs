@@ -1,4 +1,5 @@
 use crate::app::WindowState;
+use crate::get_screen_size;
 use crate::stylet::stylet_manager::{AxisEventState, ButtonEventState, ProximityEventState, StyletEvent, TipEventState};
 use std::fs::OpenOptions;
 use std::os::unix::{
@@ -38,32 +39,6 @@ impl LibinputInterface for Interface {
     }
 }
 
-fn get_screen_size() -> (u32, u32) {
-    let Ok(output) = std::process::Command::new("xrandr").output() else {
-        return (1920, 1200);
-    };
-    
-    let text = String::from_utf8_lossy(&output.stdout);
-    for line in text.lines() {
-        if line.contains(" connected primary") {
-            if let Some(res) = line.split_whitespace()
-                .find(|s| s.contains('x') && s.contains('+'))
-            {
-                let parts: Vec<&str> = res.split('x').collect();
-                if parts.len() >= 2 {
-                    let w = parts[0].parse().unwrap_or(1920);
-                    let h = parts[1].split('+').next()
-                        .and_then(|s| s.parse().ok())
-                        .unwrap_or(1200);
-                    return (w, h);
-                }
-            }
-        }
-    }
-    println!("Error !");
-    assert!(false);
-    (1,1)
-}
 
 // --- Interface libinput ---
 #[allow(unsafe_code)]

@@ -1,8 +1,7 @@
+use FastNote::gpu::first_line::StrokeRenderer;
 use eframe::egui;
 use FastNote::app::App;
 use FastNote::icons::Icons;
-use FastNote::gpu::TriangleRenderer;
-
 
 fn main() -> eframe::Result {
     env_logger::init();
@@ -28,13 +27,18 @@ fn main() -> eframe::Result {
 
             // Initialise le renderer GPU
             let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
-            let renderer = TriangleRenderer::new(&wgpu_state.device, wgpu_state.target_format);
+            // let renderer = TriangleRenderer::new(&wgpu_state.device, wgpu_state.target_format);
+            // wgpu_state
+            //     .renderer
+            //     .write()
+            //     .callback_resources
+            //     .insert(renderer);
+            let renderer = StrokeRenderer::new(&wgpu_state.device, wgpu_state.target_format);
             wgpu_state
                 .renderer
                 .write()
                 .callback_resources
                 .insert(renderer);
-
             Ok(Box::new(App::new(cc, icons)))
         }),
     )

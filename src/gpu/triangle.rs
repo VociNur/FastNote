@@ -1,7 +1,11 @@
+
 use bytemuck::{Pod, Zeroable};
 use eframe::egui::{self, Pos2, Vec2};
 use eframe::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu;
+
+use crate::get_screen_size;
+use crate::strokes::StrokePoint;
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
@@ -24,10 +28,10 @@ impl TriangleRenderer {
             label: Some("triangle"),
             source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/basic.wgsl").into()),
         });
-
+        let (screen_x, screen_y) = get_screen_size();
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("uniforms"),
-            contents: bytemuck::cast_slice(&[1920.0f32, 1080.0f32, 0f32, 0f32]),
+            contents: bytemuck::cast_slice(&[screen_x as f32, screen_y as f32, 0f32, 0f32]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -115,24 +119,9 @@ impl TriangleRenderer {
     }
 }
 pub struct TriangleCallback {
-    pub positions: Vec<Vec2>,
+    pub positions: Vec<StrokePoint>,
     pub canvas_size: Vec2,
 }
-/*
-impl egui_wgpu::CallbackTrait for TriangleCallback {
-    fn paint(
-        &self,
-        _info: egui::PaintCallbackInfo,
-        render_pass: &mut wgpu::RenderPass<'static>,
-        resources: &egui_wgpu::CallbackResources,
-    ) {
-        let renderer = resources.get::<TriangleRenderer>().unwrap();
-        render_pass.set_pipeline(&renderer.pipeline);
-        render_pass.set_vertex_buffer(0, renderer.vertex_buffer.slice(..));
-        render_pass.draw(0..3, 0..1);
-    }
-}
-*/
 
 impl egui_wgpu::CallbackTrait for TriangleCallback {
     fn prepare(
@@ -151,16 +140,10 @@ impl egui_wgpu::CallbackTrait for TriangleCallback {
         queue.write_buffer(&renderer.uniform_buffer, 0, bytemuck::cast_slice(&size));
         // Convertit les clics en vertices
         let mut vertices: Vec<Vertex> = vec![];
-        if let Some(pos) = self.positions.first() {
-            // println!("pos: {:?}, canvas_size: {:?}", pos, self.canvas_size);
-            let ndc_x = (pos.x / self.canvas_size.x) * 2.0 - 1.0;
-            let ndc_y = 1.0 - (pos.y / self.canvas_size.y) * 2.0;
-            // println!("ndc: [{}, {}]", ndc_x, ndc_y);
-        }
         for pos in &self.positions {
             let s = 20.0;
-            let x = pos.x * ppp;
-            let y = pos.y * ppp;
+            let x = pos.pos.x * ppp;
+            let y = pos.pos.y * ppp;
             vertices.push(Vertex {
                 position: [x, y - s],
                 color: [1.0, 0.0, 0.0],

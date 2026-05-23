@@ -2,7 +2,7 @@ use std::{path::{self, PathBuf}, sync::{Arc, Mutex}};
 use eframe::egui::{self, Rect, Vec2};
 use egui::Color32;
 
-use crate::edition::open_edition_mode;
+use crate::{edition::open_edition_mode, strokes::StrokePoint, user_file::UserFile};
 use crate::user_project::UserProject;
 use crate::ui::ui::draw_gui;
 use crate::stylet::stylet_inputs::spawn_pen_thread;
@@ -20,7 +20,6 @@ pub struct App {
     pub window_state: Arc<Mutex<WindowState>>,
     // pub last_pen_state: Option<PenState>,
 
-    pub clicks: Vec<Vec2>,
 }
 
 pub fn load_state() -> State {
@@ -67,7 +66,7 @@ impl App {
             window_state: Arc::new(Mutex::new(WindowState::default())),
             stylet_manager: StyletManager::default(),
             // last_pen_state: None,
-            clicks: vec![],
+            // clicks: vec![],
             
             
         }
@@ -107,6 +106,13 @@ impl App {
         
         Ok(())
     }
+    pub fn open_file(&mut self, file_path: PathBuf){
+
+        
+        let json = std::fs::read_to_string(&file_path).unwrap_or_default();
+        let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default();
+        self.state.current_file = Some(user_file);
+    }
     
 }
 
@@ -134,7 +140,7 @@ impl eframe::App for App {
          let has_focus = ctx.input(|i| i.focused);
          self.app_have_focus = has_focus;
 
-         self.stylet_manager.manage_events(&has_focus, &self.gpu_rect, &mut self.clicks);
+         self.stylet_manager.manage_events(&mut self.state, &has_focus, &self.gpu_rect);
          // println!("has focus{}", has_focus);
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl){
             let _ = self.save_state();
@@ -161,41 +167,17 @@ impl eframe::App for App {
         };
 
         ctx.input(|i| {
-        for event in &i.events {
-            match event {
-                egui::Event::PointerMoved(pos) => {
-                    println!("mouse pos {}", pos);
-                    // self.clicks.push(pos.to_vec2() - self.gpu_rect.unwrap().min.to_vec2());
-                 }
-                // egui::Event::PointerButton { pos, button, pressed, .. } => { ... }
-                // egui::Event::Scroll(delta) => { ... }
-                _ => {}
+            for event in &i.events {
+                match event {
+                    egui::Event::PointerMoved(pos) => {
+                        // self.clicks.push(pos.to_vec2() - self.gpu_rect.unwrap().min.to_vec2());
+                     }
+                    // egui::Event::PointerButton { pos, button, pressed, .. } => { ... }
+                    // egui::Event::Scroll(delta) => { ... }
+                    _ => {}
+                }
             }
-        }
-    });
-
-        
-        // let pen_state = self.pen_state.lock().unwrap().clone();
-        // let opt_last_pen_state = self.last_pen_state.take();
-        // let mut events = vec![egui::Event::PointerMoved(pen_state.pos)];
-
-        // if let Some(last_pen_state) = opt_last_pen_state && pen_state.pressed != last_pen_state.pressed {
-        //     if pen_state.pressed {
-        //         println!("clic à ({:.0}, {:.0})", pen_state.pos.x, pen_state.pos.y);
-        //         // self.clicks.push(Vec2::new(pen_state.pos.x, pen_state.pos.y));
-        //         stylet_click(pen_state.pos, pen_state.pressed, pen_state.pressure);
-
-        //     }
-        //     events.push(egui::Event::PointerButton {
-        //         pos: pen_state.pos,
-        //         button: egui::PointerButton::Primary,
-        //         pressed: pen_state.pressed,
-        //         modifiers: egui::Modifiers::default(),
-        //     });
-        // }
-        // self.last_pen_state = Some(pen_state);
-
-        // ctx.input_mut(|i| i.events.extend(events));
+        });
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {

@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
 use eframe::egui;
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{edition::open_edition_mode, pen::{DEFAULT_PEN, Pen}, themes::ThemeData, user_project::UserProject};
+use crate::{app::App, edition::open_edition_mode, pen::{DEFAULT_PEN, Pen}, themes::ThemeData, user_file::UserFile, user_project::UserProject};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum Menu {
@@ -40,6 +42,7 @@ pub struct State{
     pub value: String,
     pub pen: Pen,
     pub opened_projects: Vec<UserProject>,
+    pub current_file: Option<UserFile>,
     pub ajout: String,
     pub edition_open: bool,
     
@@ -53,6 +56,7 @@ impl Default for State{
             value: "".to_owned(),
             pen: DEFAULT_PEN,
             opened_projects: vec![],
+            current_file: None,
             ajout: "auie".to_owned(),
             edition_open: false,
         }
@@ -68,6 +72,7 @@ impl State{
             value: "Oh".to_owned(),
             pen: DEFAULT_PEN,
             opened_projects: vec![],
+            current_file: None,
             ajout: "auie".to_owned(),
             edition_open: false,
         }
@@ -84,5 +89,4 @@ impl State{
     pub fn get_menu(&self) -> Menu{
         self.menu_mode
     }
-
 }

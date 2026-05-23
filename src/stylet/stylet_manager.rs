@@ -1,12 +1,16 @@
-use std::sync::{Arc, Mutex};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 
-use eframe::egui::{self, Pos2, Rect, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Stroke, Vec2};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
-use crate::stylet::stylet::StyletState;
+use crate::{
+    state::State,
+    strokes::{PenStroke, StrokePoint},
+    stylet::stylet::StyletState, user_file::UserFile,
+};
 
 #[derive(Default)]
 pub struct StyletManager {
@@ -15,12 +19,17 @@ pub struct StyletManager {
 }
 
 impl StyletManager {
-    pub fn manage_events(self: &mut Self, has_focus: &bool, gpu_rect: &Option<Rect>, clicks: &mut Vec<Vec2>) {
+    pub fn manage_events(
+        self: &mut Self,
+        state: &mut State,
+        has_focus: &bool,
+        gpu_rect: &Option<Rect>,
+    ) {
         let events = std::mem::take(&mut *self.events.lock().unwrap());
         for event in events {
             match event {
                 StyletEvent::Axis(axis_event_state) => {
-                    self.on_axis_event(&axis_event_state, gpu_rect, clicks);
+                    self.on_axis_event(state, &axis_event_state, gpu_rect);
                     self.stylet.pos = axis_event_state.pos;
                     self.stylet.pressure = axis_event_state.pressure;
                     self.stylet.distance = axis_event_state.distance;
@@ -29,7 +38,7 @@ impl StyletManager {
                     self.stylet.tool_type = axis_event_state.tool_type;
                 }
                 StyletEvent::Tip(tip_event_state) => {
-                    self.on_tip_event(&tip_event_state, gpu_rect, clicks);
+                    self.on_tip_event(state, &tip_event_state, gpu_rect);
                     self.stylet.pos = tip_event_state.pos;
                     self.stylet.pressure = tip_event_state.pressure;
                     self.stylet.distance = tip_event_state.distance;
@@ -56,34 +65,63 @@ impl StyletManager {
             }
         }
     }
-    pub fn touch_gpu(self: &mut Self, pos: Pos2, opt_gpu_rect: &Option<Rect>, clicks: &mut Vec<Vec2>){
-        if !self.stylet.pressed{
-            return
+    pub fn touch_gpu(
+        self: &mut Self,
+        state: &mut State,
+        pos: Pos2,
+        pressure: f64,
+        opt_gpu_rect: &Option<Rect>,
+    ) {
+        if !self.stylet.pressed {
+            return;
         }
-        if opt_gpu_rect.is_none(){
+        if state.current_file.is_none() {
+            state.current_file = Some(UserFile::new(PathBuf::from("")));
+        }
+        if opt_gpu_rect.is_none() {
             println!("Gpu rect is none\n Return\n");
             return;
         }
         let gpu_rect = opt_gpu_rect.unwrap();
-            if gpu_rect.contains(pos){
-                println!("Inside the gpu rect");
-                let draw_pos = pos - gpu_rect.min;
-                clicks.push(draw_pos);
-                
-            }else{
-                println!("Outside the gpu rect");
-                
+        if gpu_rect.contains(pos) {
+            let draw_pos = pos - gpu_rect.min;
+            let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
+            if let Some(file) = state.current_file.as_mut() {
+                file.current_stroke.push(stroke_point);
             }
-    } 
-    pub fn on_axis_event(self: &mut Self, axis_event_state: &AxisEventState, opt_gpu_rect: &Option<Rect>, clicks: &mut Vec<Vec2>) {
+        } else {
+            println!("Outside the gpu rect");
+        }
+    }
+    
+    pub fn on_axis_event(
+        self: &mut Self,
+        state: &mut State,
+        axis_event_state: &AxisEventState,
+        opt_gpu_rect: &Option<Rect>,
+    ) {
         // println!("axis: {axis_event_state:?}");
-        println!("stylet: {}", axis_event_state.pos);
-        self.touch_gpu(axis_event_state.pos, opt_gpu_rect, clicks);
+        self.touch_gpu(state, axis_event_state.pos, axis_event_state.pressure, opt_gpu_rect);
     }
 
-    pub fn on_tip_event(self: &mut Self, tip_event_state: &TipEventState, opt_gpu_rect: &Option<Rect>, clicks: &mut Vec<Vec2>) {
+    pub fn on_tip_event(
+        self: &mut Self,
+        state: &mut State,
+        tip_event_state: &TipEventState,
+        opt_gpu_rect: &Option<Rect>,
+    ) {
         // println!("tip: {tip_event_state:?}");
-        self.touch_gpu(tip_event_state.pos, opt_gpu_rect, clicks);
+        //
+        if tip_event_state.tip_state == TipState::Down{
+
+            self.touch_gpu(state, tip_event_state.pos, tip_event_state.pressure, opt_gpu_rect);
+        }else{
+            if let Some(file) = &mut state.current_file{
+                let points = std::mem::take(&mut file.current_stroke);
+                let pen_stroke = PenStroke::new(Color32::RED, points, 1f32);
+                file.strokes.push(pen_stroke);
+            }
+        }
     }
 
     pub fn on_proximity_event(self: &mut Self, proximity_event_state: &ProximityEventState) {
@@ -91,7 +129,7 @@ impl StyletManager {
     }
 
     pub fn on_button_event(self: &mut Self, button_event_state: &ButtonEventState) {
-        println!("button: {button_event_state:?}");
+        // println!("button: {button_event_state:?}");
     }
 }
 
@@ -210,7 +248,7 @@ impl ButtonEventState {
         Self {
             button,
             button_state,
-        tool_type,
+            tool_type,
         }
     }
 }
