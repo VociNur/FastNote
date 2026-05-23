@@ -3,6 +3,7 @@ use FastNote::app::App;
 use FastNote::icons::Icons;
 use FastNote::gpu::TriangleRenderer;
 
+
 fn main() -> eframe::Result {
     env_logger::init();
 

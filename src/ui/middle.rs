@@ -67,7 +67,7 @@ pub fn draw_file_menu_middle(ui: &mut egui::Ui, app: &mut App){
 
 //HOME
 pub fn draw_home_menu_middle(ui: &mut egui::Ui, app: &mut App){
-    Panel::left("Notebook trees").show_inside(ui, |ui| {
+    egui::ScrollArea::vertical().show(ui, |ui| {
         app.state.opened_projects.iter().for_each(|p| {
             show_notebook(ui , app, &p)
         });
@@ -99,7 +99,7 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &App, project: &UserProject){
 
 fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &App) {
     for entry in std::fs::read_dir(dir).into_iter().flatten().filter_map(|e| e.ok()) {
-        println!("{:?}", entry.file_name());
+        // println!("{:?}", entry.file_name());
         let path = entry.path();
         let name = path.file_name().unwrap_or_default().to_string_lossy();
 

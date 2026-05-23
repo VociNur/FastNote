@@ -1,16 +1,24 @@
 use std::{path::{self, PathBuf}, sync::{Arc, Mutex}};
-use eframe::egui::{self, Vec2};
+use eframe::egui::{self, Rect, Vec2};
 use egui::Color32;
 
-use crate::{edition::open_edition_mode, icons::Icons, state::State, stylet::spawn_pen_thread, ui::ui::draw_gui, user_project::UserProject };
+use crate::edition::open_edition_mode;
+use crate::user_project::UserProject;
+use crate::ui::ui::draw_gui;
+use crate::stylet::stylet_inputs::spawn_pen_thread;
+use crate::state::State;
+use crate::icons::Icons;
+use crate::stylet::stylet_manager::StyletManager;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
+    pub app_have_focus: bool,
     pub state: State,
     pub icons: Icons,
+    pub stylet_manager: StyletManager,
+    pub gpu_rect: Option<Rect>,
     pub window_state: Arc<Mutex<WindowState>>,
-    pub pen_state: Arc<Mutex<PenState>>,
-    pub last_pen_state: Option<PenState>,
+    // pub last_pen_state: Option<PenState>,
 
     pub clicks: Vec<Vec2>,
 }
@@ -41,6 +49,7 @@ fn save_path() -> std::path::PathBuf {
 pub struct PenState {
     pub pos: egui::Pos2,
     pub pressed: bool,
+    pub pressure: f64,
 }
 
 #[derive(Default, Clone)]
@@ -51,11 +60,13 @@ pub struct WindowState {
 impl App {
     fn default(icons: Icons) -> Self {
         Self {
+            app_have_focus: false,
             state: load_state(),
             icons: icons,
+            gpu_rect: None,
             window_state: Arc::new(Mutex::new(WindowState::default())),
-            pen_state: Arc::new(Mutex::new(PenState::default())),
-            last_pen_state: None,
+            stylet_manager: StyletManager::default(),
+            // last_pen_state: None,
             clicks: vec![],
             
             
@@ -75,7 +86,7 @@ impl App {
         // }
         let app = App::default(icons);
 
-        spawn_pen_thread(Arc::clone(&app.pen_state), Arc::clone(&app.window_state));
+        spawn_pen_thread(Arc::clone(&app.window_state), Arc::clone(&app.stylet_manager.events));
         app
     }
 
@@ -101,13 +112,14 @@ impl App {
 
 impl eframe::App for App {
     /// Called by the framework to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {
         // eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx();
+
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);
@@ -118,7 +130,12 @@ impl eframe::App for App {
             open_edition_mode(&mut self.state.theme, ui.ctx(), &mut self.state.edition_open);
         }
     }
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame){
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame){
+         let has_focus = ctx.input(|i| i.focused);
+         self.app_have_focus = has_focus;
+
+         self.stylet_manager.manage_events(&has_focus, &self.gpu_rect, &mut self.clicks);
+         // println!("has focus{}", has_focus);
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl){
             let _ = self.save_state();
             println!("Save state");
@@ -132,7 +149,7 @@ impl eframe::App for App {
             let json = serde_json::to_string_pretty(&self.state).unwrap_or_default();
             println!("{}", json);
         }
-        let window_pos = ctx.input(|i| i.viewport().outer_rect)
+        let window_pos = ctx.input(|i| i.viewport().inner_rect)
             .map(|r| r.min)
             .unwrap_or_else(|| {println!("zero"); egui::Pos2::ZERO});
         // let ppp = ctx.pixels_per_point();
@@ -143,26 +160,42 @@ impl eframe::App for App {
             // w.ppp = ppp;
         };
 
-        
-        let pen_state = self.pen_state.lock().unwrap().clone();
-        let opt_last_pen_state = self.last_pen_state.take();
-        let mut events = vec![egui::Event::PointerMoved(pen_state.pos)];
-
-        if let Some(last_pen_state) = opt_last_pen_state && pen_state.pressed != last_pen_state.pressed {
-            if pen_state.pressed {
-                println!("clic à ({:.0}, {:.0})", pen_state.pos.x, pen_state.pos.y);
-                self.clicks.push(Vec2::new(pen_state.pos.x, pen_state.pos.y));
+        ctx.input(|i| {
+        for event in &i.events {
+            match event {
+                egui::Event::PointerMoved(pos) => {
+                    println!("mouse pos {}", pos);
+                    // self.clicks.push(pos.to_vec2() - self.gpu_rect.unwrap().min.to_vec2());
+                 }
+                // egui::Event::PointerButton { pos, button, pressed, .. } => { ... }
+                // egui::Event::Scroll(delta) => { ... }
+                _ => {}
             }
-            events.push(egui::Event::PointerButton {
-                pos: pen_state.pos,
-                button: egui::PointerButton::Primary,
-                pressed: pen_state.pressed,
-                modifiers: egui::Modifiers::default(),
-            });
         }
-        self.last_pen_state = Some(pen_state);
+    });
 
-        ctx.input_mut(|i| i.events.extend(events));
+        
+        // let pen_state = self.pen_state.lock().unwrap().clone();
+        // let opt_last_pen_state = self.last_pen_state.take();
+        // let mut events = vec![egui::Event::PointerMoved(pen_state.pos)];
+
+        // if let Some(last_pen_state) = opt_last_pen_state && pen_state.pressed != last_pen_state.pressed {
+        //     if pen_state.pressed {
+        //         println!("clic à ({:.0}, {:.0})", pen_state.pos.x, pen_state.pos.y);
+        //         // self.clicks.push(Vec2::new(pen_state.pos.x, pen_state.pos.y));
+        //         stylet_click(pen_state.pos, pen_state.pressed, pen_state.pressure);
+
+        //     }
+        //     events.push(egui::Event::PointerButton {
+        //         pos: pen_state.pos,
+        //         button: egui::PointerButton::Primary,
+        //         pressed: pen_state.pressed,
+        //         modifiers: egui::Modifiers::default(),
+        //     });
+        // }
+        // self.last_pen_state = Some(pen_state);
+
+        // ctx.input_mut(|i| i.events.extend(events));
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
@@ -190,4 +223,5 @@ impl eframe::App for App {
 
     fn raw_input_hook(&mut self, _ctx: &egui::Context, _raw_input: &mut egui::RawInput) {}
 }
+
 
