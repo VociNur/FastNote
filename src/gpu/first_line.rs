@@ -10,10 +10,10 @@ use egui_wgpu::wgpu;
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 2],
-    _pad: [f32; 2], // alignement vec4 → 16 bytes
+    uv: f32,
+    _pad: f32,
     color: [f32; 4],
 }
-
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 pub struct GpuPoint {
@@ -187,16 +187,22 @@ impl StrokeRenderer {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
+
                     attributes: &[
                         wgpu::VertexAttribute {
                             format: wgpu::VertexFormat::Float32x2,
-                            offset: 0, // position au début
+                            offset: 0, // position
                             shader_location: 0,
                         },
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x4,
-                            offset: 16, // après position(8) + _pad(8)
+                            format: wgpu::VertexFormat::Float32,
+                            offset: 8, // uv (après position)
                             shader_location: 1,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 16, // color (après position + uv + _pad)
+                            shader_location: 2,
                         },
                     ],
                 }],
@@ -214,7 +220,11 @@ impl StrokeRenderer {
             }),
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState {
+                count: 4, // 4x MSAA
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
             multiview_mask: None,
             cache: None,
         });
