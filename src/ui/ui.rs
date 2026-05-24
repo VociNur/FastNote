@@ -24,15 +24,6 @@ pub fn draw_gui(ui: &mut egui::Ui, app: &mut App) {
                 .map(|f| f.current_stroke.clone())
                 .unwrap_or_default();
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
-            // ui.painter().add(egui_wgpu::Callback::new_paint_callback(
-            //     rect,
-            //     TriangleCallback {
-            //         positions: points,
-            //         canvas_size: rect.size(),
-            //     },
-            // ));
-            //
-            //
             let current_stroke = app.state.current_file
             .as_ref()
             .map(|f| f.current_stroke.clone())

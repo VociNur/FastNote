@@ -1,162 +1,252 @@
+use crate::strokes::{PenStroke, StrokePoint};
 use bytemuck::{Pod, Zeroable};
 use eframe::egui::{self, Vec2};
 use eframe::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu;
-use crate::get_screen_size;
-use crate::strokes::{PenStroke, StrokePoint};
 
-// --- Vertex ---
+// --- Structures ---
+
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 2],
-    color:    [f32; 3],
+    _pad: [f32; 2], // alignement vec4 → 16 bytes
+    color: [f32; 4],
 }
 
-// --- Renderer (créé une fois au démarrage) ---
+#[repr(C)]
+#[derive(Copy, Clone, Pod, Zeroable)]
+pub struct GpuPoint {
+    pos: [f32; 2],
+    pressure: f32,
+    color: u32,   // 0 = noir, 1 = rouge
+    is_last: u32, // 1 = dernier point du stroke
+    _pad: u32,
+    _pad2: u32,
+    _pad3: u32, // alignement 32 bytes
+}
+
+// --- Renderer ---
+
 pub struct StrokeRenderer {
-    pipeline:       wgpu::RenderPipeline,
-    vertex_buffer:  wgpu::Buffer,
+    compute_pipeline: wgpu::ComputePipeline,
+    render_pipeline: wgpu::RenderPipeline,
+    points_buffer: wgpu::Buffer,
+    vertices_buffer: wgpu::Buffer,
     uniform_buffer: wgpu::Buffer,
-    bind_group:     wgpu::BindGroup,
+    compute_bind_group: wgpu::BindGroup,
+    render_bind_group: wgpu::BindGroup,
     pub vertex_count: u32,
 }
 
 impl StrokeRenderer {
     pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("stroke shader"),
+        let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("compute shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/compute.wgsl").into()),
+        });
+        let render_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("render shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/stroke.wgsl").into()),
         });
 
-        let (screen_x, screen_y) = get_screen_size();
+        let max_points = 100_000usize;
+        let max_vertices = (max_points - 1) * 6;
+
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("uniforms"),
-            contents: bytemuck::cast_slice(&[screen_x as f32, screen_y as f32]),//0f32, 0f32
+            contents: bytemuck::cast_slice(&[1920.0f32, 1200.0f32]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label:   Some("stroke bgl"),
+        let points_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("points"),
+            size: (max_points * std::mem::size_of::<GpuPoint>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let vertices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("vertices"),
+            size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        });
+
+        // --- Bind group layout compute ---
+        let compute_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("compute bgl"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+        });
+
+        let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("compute bg"),
+            layout: &compute_bgl,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: points_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: vertices_buffer.as_entire_binding(),
+                },
+            ],
+        });
+
+        // --- Bind group layout render ---
+        let render_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("render bgl"),
             entries: &[wgpu::BindGroupLayoutEntry {
-                binding:    0,
+                binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
-                    ty:                 wgpu::BufferBindingType::Uniform,
+                    ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size:   None,
+                    min_binding_size: None,
                 },
                 count: None,
             }],
         });
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label:   Some("stroke bg"),
-            layout:  &bgl,
+        let render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("render bg"),
+            layout: &render_bgl,
             entries: &[wgpu::BindGroupEntry {
-                binding:  0,
+                binding: 0,
                 resource: uniform_buffer.as_entire_binding(),
             }],
         });
 
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label:                Some("stroke pipeline layout"),
-            bind_group_layouts:   &[Some(&bgl)],
-            immediate_size:       0,
+        // --- Pipelines ---
+        let compute_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("compute pipeline layout"),
+                bind_group_layouts: &[Some(&compute_bgl)],
+                immediate_size: 0,
+            });
+
+        let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("compute pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: Some("cs_main"),
+            compilation_options: Default::default(),
+            cache: None,
         });
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label:    Some("stroke vertices"),
-            contents: bytemuck::cast_slice(&[Vertex { position: [0.0, 0.0], color: [0.0, 0.0, 0.0] }]),
-            usage:    wgpu::BufferUsages::VERTEX,
-        });
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("render pipeline layout"),
+                bind_group_layouts: &[Some(&render_bgl)],
+                immediate_size: 0,
+            });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label:  Some("stroke pipeline"),
-            layout: Some(&pipeline_layout),
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("render pipeline"),
+            layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module:      &shader,
+                module: &render_shader,
                 entry_point: Some("vs_main"),
+
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as u64,
-                    step_mode:    wgpu::VertexStepMode::Vertex,
-                    attributes:   &wgpu::vertex_attr_array![
-                        0 => Float32x2,
-                        1 => Float32x3,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x2,
+                            offset: 0, // position au début
+                            shader_location: 0,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 16, // après position(8) + _pad(8)
+                            shader_location: 1,
+                        },
                     ],
                 }],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module:      &shader,
+                module: &render_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format:     target_format,
-                    blend:      Some(wgpu::BlendState::ALPHA_BLENDING),
+                    format: target_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: Default::default(),
             }),
-            primitive:     wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
-            multisample:   wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState::default(),
             multiview_mask: None,
-            cache:         None,
+            cache: None,
         });
 
-        Self { pipeline, vertex_buffer, uniform_buffer, bind_group, vertex_count: 0 }
+        Self {
+            compute_pipeline,
+            render_pipeline,
+            points_buffer,
+            vertices_buffer,
+            uniform_buffer,
+            compute_bind_group,
+            render_bind_group,
+            vertex_count: 0,
+        }
     }
 }
 
 // --- Callback ---
+
 pub struct StrokeCallback {
     pub current_stroke: Vec<StrokePoint>,
-    pub strokes:        Vec<PenStroke>,
-    pub canvas_size:    Vec2,
-}
-
-fn generate_vertices(points: &[StrokePoint], color: [f32; 3], ppp: f32, out: &mut Vec<Vertex>) {
-    for w in points.windows(2) {
-        let a = &w[0];
-        let b = &w[1];
-
-        let ax = a.pos.x * ppp;
-        let ay = a.pos.y * ppp;
-        let bx = b.pos.x * ppp;
-        let by = b.pos.y * ppp;
-
-        let dx = bx - ax;
-        let dy = by - ay;
-        let len = (dx * dx + dy * dy).sqrt();
-        if len < 0.001 { continue; }
-
-        let nx = -dy / len;
-        let ny =  dx / len;
-
-        let ha = (a.pressure as f32 * 5.0).max(1.0);
-        let hb = (b.pressure as f32 * 5.0).max(1.0);
-
-        let p0 = [ax + nx * ha, ay + ny * ha];
-        let p1 = [ax - nx * ha, ay - ny * ha];
-        let p2 = [bx + nx * hb, by + ny * hb];
-        let p3 = [bx - nx * hb, by - ny * hb];
-
-        out.push(Vertex { position: p0, color });
-        out.push(Vertex { position: p1, color });
-        out.push(Vertex { position: p2, color });
-        out.push(Vertex { position: p1, color });
-        out.push(Vertex { position: p3, color });
-        out.push(Vertex { position: p2, color });
-    }
+    pub strokes: Vec<PenStroke>,
+    pub canvas_size: Vec2,
 }
 
 impl egui_wgpu::CallbackTrait for StrokeCallback {
     fn prepare(
         &self,
-        device: &wgpu::Device,
+        _device: &wgpu::Device,
         queue: &wgpu::Queue,
         sd: &egui_wgpu::ScreenDescriptor,
-        _encoder: &mut wgpu::CommandEncoder,
+        encoder: &mut wgpu::CommandEncoder,
         resources: &mut egui_wgpu::CallbackResources,
     ) -> Vec<wgpu::CommandBuffer> {
         let renderer = resources.get_mut::<StrokeRenderer>().unwrap();
@@ -165,24 +255,61 @@ impl egui_wgpu::CallbackTrait for StrokeCallback {
         let size = [self.canvas_size.x * ppp, self.canvas_size.y * ppp];
         queue.write_buffer(&renderer.uniform_buffer, 0, bytemuck::cast_slice(&size));
 
-        let mut vertices: Vec<Vertex> = vec![];
+        // Construit la liste de tous les points avec métadonnées
+        let mut all_points: Vec<GpuPoint> = vec![];
+        let mut total_segments = 0u32;
 
-        // strokes terminés → rouge
         for stroke in &self.strokes {
-            generate_vertices(&stroke.points, [1.0, 0.0, 0.0], ppp, &mut vertices);
+            for (i, p) in stroke.points.iter().enumerate() {
+                let is_last = (i == stroke.points.len() - 1) as u32;
+                if is_last == 0 {
+                    total_segments += 1;
+                }
+                all_points.push(GpuPoint {
+                    pos: [p.pos.x * ppp, p.pos.y * ppp],
+                    pressure: p.pressure as f32,
+                    color: 1, // rouge
+                    is_last,
+                    _pad: 0,
+                    _pad2: 0,
+                    _pad3: 0,
+                });
+            }
         }
 
-        // trait en cours → noir
-        generate_vertices(&self.current_stroke, [0.0, 0.0, 0.0], ppp, &mut vertices);
-
-        renderer.vertex_count = vertices.len() as u32;
-
-        if !vertices.is_empty() {
-            renderer.vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label:    Some("stroke vertices"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage:    wgpu::BufferUsages::VERTEX,
+        for (i, p) in self.current_stroke.iter().enumerate() {
+            let is_last = (i == self.current_stroke.len() - 1) as u32;
+            if is_last == 0 {
+                total_segments += 1;
+            }
+            all_points.push(GpuPoint {
+                pos: [p.pos.x * ppp, p.pos.y * ppp],
+                pressure: p.pressure as f32,
+                color: 0, // noir
+                is_last,
+                _pad: 0,
+                _pad2: 0,
+                _pad3: 0,
             });
+        }
+
+        renderer.vertex_count = (all_points.len() as u32).saturating_sub(1) * 6;
+
+        if all_points.len() >= 2 {
+            queue.write_buffer(
+                &renderer.points_buffer,
+                0,
+                bytemuck::cast_slice(&all_points),
+            );
+
+            let n = (all_points.len() - 1) as u32;
+            let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("compute pass"),
+                timestamp_writes: None,
+            });
+            compute_pass.set_pipeline(&renderer.compute_pipeline);
+            compute_pass.set_bind_group(0, &renderer.compute_bind_group, &[]);
+            compute_pass.dispatch_workgroups((n + 63) / 64, 1, 1);
         }
 
         vec![]
@@ -195,10 +322,12 @@ impl egui_wgpu::CallbackTrait for StrokeCallback {
         resources: &egui_wgpu::CallbackResources,
     ) {
         let renderer = resources.get::<StrokeRenderer>().unwrap();
-        if renderer.vertex_count == 0 { return; }
-        render_pass.set_pipeline(&renderer.pipeline);
-        render_pass.set_bind_group(0, &renderer.bind_group, &[]);
-        render_pass.set_vertex_buffer(0, renderer.vertex_buffer.slice(..));
+        if renderer.vertex_count == 0 {
+            return;
+        }
+        render_pass.set_pipeline(&renderer.render_pipeline);
+        render_pass.set_bind_group(0, &renderer.render_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, renderer.vertices_buffer.slice(..));
         render_pass.draw(0..renderer.vertex_count, 0..1);
     }
 }
