@@ -29,6 +29,6 @@ fn vs_main(in: VertexIn) -> VertexOut {
 
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
-    let alpha = 1.0 - smoothstep(0.9, 1.0, abs(in.uv));
+    let alpha = 1.0 - smoothstep(0.5, 1.0, abs(in.uv));
     return vec4<f32>(in.color.rgb, in.color.a * alpha);
 }

@@ -1,11 +1,11 @@
 use crate::{
-    app::App, gpu::first_line::StrokeCallback, ui::{middle::draw_middle, top_bar::draw_top_bar}
+    app::App, gpu::first_line::StrokeCallback, ui::{middle::draw_left, top_bar::draw_top_bar}
 };
 use eframe::egui::{self, Pos2, Rect};
 
 pub fn draw_gui(ui: &mut egui::Ui, app: &mut App) {
     draw_top_bar(ui, app);
-    draw_middle(ui, app);
+    draw_left(ui, app);
     // println!("screen_rect: {:?}", ui.ctx().screen_rect());
     // println!("view_poirt: {:?}", ui.ctx().viewport_rect());
 
@@ -40,6 +40,7 @@ pub fn draw_gui(ui: &mut egui::Ui, app: &mut App) {
                     current_stroke,
                     strokes,
                     canvas_size: rect.size(),
+                    gpu_view: app.state.gpu_view.clone(),
                 },
             ));
         });

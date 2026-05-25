@@ -13,6 +13,8 @@ pub mod stylet;
 pub mod gpu;
 pub mod strokes;
 pub mod user_file;
+pub mod input_manager;
+pub mod gpuview;
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");
 //     let r = u8::from_str_radix(&hx[0..2],16).unwrap();

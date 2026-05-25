@@ -1,3 +1,4 @@
+use crate::gpuview::GpuView;
 use crate::strokes::{PenStroke, StrokePoint};
 use bytemuck::{Pod, Zeroable};
 use eframe::egui::{self, Vec2};
@@ -248,6 +249,7 @@ pub struct StrokeCallback {
     pub current_stroke: Vec<StrokePoint>,
     pub strokes: Vec<PenStroke>,
     pub canvas_size: Vec2,
+    pub gpu_view: GpuView,
 }
 
 impl egui_wgpu::CallbackTrait for StrokeCallback {
@@ -267,14 +269,14 @@ impl egui_wgpu::CallbackTrait for StrokeCallback {
 
         // Construit la liste de tous les points avec métadonnées
         let mut all_points: Vec<GpuPoint> = vec![];
-        let mut total_segments = 0u32;
+        // let mut total_segments = 0u32;
 
         for stroke in &self.strokes {
             for (i, p) in stroke.points.iter().enumerate() {
                 let is_last = (i == stroke.points.len() - 1) as u32;
-                if is_last == 0 {
-                    total_segments += 1;
-                }
+                // if is_last == 0 {
+                //     total_segments += 1;
+                // }
                 all_points.push(GpuPoint {
                     pos: [p.pos.x * ppp, p.pos.y * ppp],
                     pressure: p.pressure as f32,
@@ -289,9 +291,9 @@ impl egui_wgpu::CallbackTrait for StrokeCallback {
 
         for (i, p) in self.current_stroke.iter().enumerate() {
             let is_last = (i == self.current_stroke.len() - 1) as u32;
-            if is_last == 0 {
-                total_segments += 1;
-            }
+            // if is_last == 0 {
+            //     total_segments += 1;
+            // }
             all_points.push(GpuPoint {
                 pos: [p.pos.x * ppp, p.pos.y * ppp],
                 pressure: p.pressure as f32,

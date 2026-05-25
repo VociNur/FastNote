@@ -1,8 +1,8 @@
 use std::{path::{self, PathBuf}, sync::{Arc, Mutex}};
-use eframe::egui::{self, Rect, Vec2};
+use eframe::egui::{self, Rect};
 use egui::Color32;
 
-use crate::{edition::open_edition_mode, strokes::StrokePoint, user_file::UserFile};
+use crate::{edition::open_edition_mode, input_manager::InputManager, user_file::UserFile};
 use crate::user_project::UserProject;
 use crate::ui::ui::draw_gui;
 use crate::stylet::stylet_inputs::spawn_pen_thread;
@@ -15,10 +15,13 @@ pub struct App {
     pub app_have_focus: bool,
     pub state: State,
     pub icons: Icons,
+    pub input_manager: InputManager,
     pub stylet_manager: StyletManager,
     pub gpu_rect: Option<Rect>,
     pub window_state: Arc<Mutex<WindowState>>,
     // pub last_pen_state: Option<PenState>,
+    //
+    
 
 }
 
@@ -65,6 +68,7 @@ impl App {
             gpu_rect: None,
             window_state: Arc::new(Mutex::new(WindowState::default())),
             stylet_manager: StyletManager::default(),
+            input_manager: InputManager::default(),
             // last_pen_state: None,
             // clicks: vec![],
             
@@ -72,17 +76,7 @@ impl App {
         }
     }
     // Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>, icons:Icons) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        // if let Some(storage) = cc.storage {
-            // eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
-        // } else {
-            // Default::default()
-        // }
+    pub fn new(_cc: &eframe::CreationContext<'_>, icons:Icons) -> Self {
         let app = App::default(icons);
 
         spawn_pen_thread(Arc::clone(&app.window_state), Arc::clone(&app.stylet_manager.events));
@@ -168,14 +162,8 @@ impl eframe::App for App {
 
         ctx.input(|i| {
             for event in &i.events {
-                match event {
-                    egui::Event::PointerMoved(pos) => {
-                        // self.clicks.push(pos.to_vec2() - self.gpu_rect.unwrap().min.to_vec2());
-                     }
-                    // egui::Event::PointerButton { pos, button, pressed, .. } => { ... }
-                    // egui::Event::Scroll(delta) => { ... }
-                    _ => {}
-                }
+                // println!("Event : {:?}", event);
+                self.input_manager.manage_events(&mut self.state, event.clone());
             }
         });
     }

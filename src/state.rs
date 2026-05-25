@@ -1,10 +1,9 @@
-use std::path::PathBuf;
 
 use eframe::egui;
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{app::App, edition::open_edition_mode, pen::{DEFAULT_PEN, Pen}, themes::ThemeData, user_file::UserFile, user_project::UserProject};
+use crate::{edition::open_edition_mode, gpuview::GpuView, pen::{DEFAULT_PEN, Pen}, themes::ThemeData, user_file::UserFile, user_project::UserProject};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum Menu {
@@ -39,13 +38,15 @@ impl Menu {
 pub struct State{
     menu_mode: Menu,
     pub theme: ThemeData,
-    pub value: String,
-    pub pen: Pen,
+
     pub opened_projects: Vec<UserProject>,
     pub current_file: Option<UserFile>,
-    pub ajout: String,
+
+    pub pen: Pen,
     pub edition_open: bool,
-    
+
+
+    pub gpu_view: GpuView,    
 }
 
 impl Default for State{
@@ -53,12 +54,11 @@ impl Default for State{
         Self{
             menu_mode: Menu::File,
             theme: ThemeData::default(),
-            value: "".to_owned(),
             pen: DEFAULT_PEN,
             opened_projects: vec![],
             current_file: None,
-            ajout: "auie".to_owned(),
             edition_open: false,
+            gpu_view: GpuView::default(), 
         }
     }
 }
@@ -69,12 +69,11 @@ impl State{
             menu_mode: Menu::File,
             theme: ThemeData::default(),
             // value: 3,
-            value: "Oh".to_owned(),
             pen: DEFAULT_PEN,
             opened_projects: vec![],
             current_file: None,
-            ajout: "auie".to_owned(),
             edition_open: false,
+            gpu_view: GpuView::default(), 
         }
     }
     pub fn set_menu(&mut self, menu: Menu, ctx: &Context){
