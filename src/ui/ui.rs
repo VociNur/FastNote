@@ -29,6 +29,31 @@ pub fn draw_gui(ui: &mut egui::Ui, app: &mut App) {
             .map(|f| f.current_stroke.clone())
             .unwrap_or_default();
 
+        let painter = ui.painter();
+        let zoom = app.state.gpu_view.zoom;
+        let offset = app.state.gpu_view.top_left; // le décalage actuel
+
+        // Lignes horizontales tous les 50 pixels (dans l'espace canvas)
+        let line_spacing = 50.0 * zoom;
+        let start_y = rect.min.y - (offset.y * zoom) % line_spacing;
+        let mut y = start_y;
+        while y < rect.max.y {
+            painter.line_segment(
+                [egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)],
+                egui::Stroke::new(1.0, egui::Color32::from_rgb(200, 210, 255)),
+            );
+            y += line_spacing;
+        }
+
+        // Marge verticale rouge
+        let margin_x = rect.min.x + 80.0 * zoom - offset.x * zoom;
+        if margin_x > rect.min.x && margin_x < rect.max.x {
+            painter.line_segment(
+                [egui::pos2(margin_x, rect.min.y), egui::pos2(margin_x, rect.max.y)],
+                egui::Stroke::new(1.5, egui::Color32::from_rgb(255, 100, 100)),
+            );
+        }
+
             let strokes = app.state.current_file
                 .as_ref()
                 .map(|f| f.strokes.clone())
