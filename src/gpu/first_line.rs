@@ -56,7 +56,7 @@ impl StrokeRenderer {
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("uniforms"),
-            contents: bytemuck::cast_slice(&[1920.0f32, 1200.0f32]),
+            contents: bytemuck::cast_slice(&[1920.0f32, 1200.0f32, 0f32, 0f32, 1f32, 0f32]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -264,7 +264,7 @@ impl egui_wgpu::CallbackTrait for StrokeCallback {
         let renderer = resources.get_mut::<StrokeRenderer>().unwrap();
 
         let ppp = sd.pixels_per_point;
-        let size = [self.canvas_size.x * ppp, self.canvas_size.y * ppp];
+        let size = [self.canvas_size.x * ppp, self.canvas_size.y * ppp, self.gpu_view.top_left.x, self.gpu_view.top_left.y, self.gpu_view.zoom, 0f32];//pad
         queue.write_buffer(&renderer.uniform_buffer, 0, bytemuck::cast_slice(&size));
 
         // Construit la liste de tous les points avec métadonnées

@@ -84,7 +84,7 @@ impl StyletManager {
         }
         let gpu_rect = opt_gpu_rect.unwrap();
         if gpu_rect.contains(pos) {
-            let draw_pos = pos - gpu_rect.min;
+            let draw_pos = (pos - gpu_rect.min)/state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
             let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
             if let Some(file) = state.current_file.as_mut() {
                 file.current_stroke.push(stroke_point);

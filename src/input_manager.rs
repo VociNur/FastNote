@@ -40,7 +40,7 @@ impl InputManager {
                 pos,
                 force: _force,
             } => {
-                println!("event {:?}", event);
+                // println!("event {:?}", event);
                 match phase {
                     egui::TouchPhase::Start => {
                         let mut finger = Finger { id, pos };
@@ -52,9 +52,9 @@ impl InputManager {
                         let opt_finger_id =
                             self.user_inputs.fingers.iter().position(|f| f.id == id);
                         if let Some(finger_id) = opt_finger_id {
-                            let finger = &mut self.user_inputs.fingers[finger_id].clone();
-                            self.on_finger_move(state, finger, pos);
-                            finger.pos = pos;
+                            // let finger = &mut self.user_inputs.fingers[finger_id].clone();
+                            self.on_finger_move(state, finger_id, pos);
+                            self.user_inputs.fingers[finger_id].pos = pos;
                         }
                     }
 
@@ -66,7 +66,7 @@ impl InputManager {
                             let finger = &self.user_inputs.fingers[finger_id].clone();
                             self.on_finger_end(state, finger, pos);
                         }
-                        self.user_inputs.fingers.retain(|f| {f.id != id});
+                        self.user_inputs.fingers.retain(|f| f.id != id);
                     }
                 }
             }
@@ -83,12 +83,31 @@ impl InputManager {
 
     pub fn on_finger_start(self: &mut Self, state: &mut State, finger: &mut Finger) {}
 
-    pub fn on_finger_move(self: &mut Self, state: &mut State, start_finger: &Finger, new_pos: Pos2) {
-        if self.nbr_finger() == 1{
-            
+    pub fn on_finger_move(self: &mut Self, state: &mut State, finger_id: usize, new_pos: Pos2) {
+        let last_finger = &self.user_inputs.fingers[finger_id].clone();
+        if self.nbr_finger() == 1 {
+            // println!("delta: {}", new_pos - last_finger.pos);
+            state.gpu_view.top_left -= (new_pos - last_finger.pos)/state.gpu_view.zoom;
         }
-        
+
+        if self.nbr_finger() == 2 {
+            let other = &self.user_inputs.fingers[1 - finger_id]; // l'autre doigt
+
+            let old_dist = (last_finger.pos - other.pos).length();
+            let new_dist = (new_pos - other.pos).length();
+
+            let scale = new_dist / old_dist;
+// Point central entre les deux doigts → centre du zoom
+            let center = (new_pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
+            // Zoom centré sur le point central
+            //Le other nous sert de repère            
+            state.gpu_view.zoom *= scale;
+            let last_center = (last_finger.pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
+            state.gpu_view.top_left += center-last_center;
+        }
     }
 
-    pub fn on_finger_end(self: &mut Self, state: &mut State, start_finger: &Finger, end_pos: Pos2) {}
+    pub fn on_finger_end(self: &mut Self, state: &mut State, last_finger: &Finger, end_pos: Pos2) {
+        // state.gpu_view.top_left = Pos2 { x: 0f32, y: 0f32 };
+    }
 }

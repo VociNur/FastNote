@@ -1,5 +1,10 @@
 struct Uniforms {
     canvas_size: vec2<f32>,
+    gpu_view_x : f32,
+    gpu_view_y : f32,
+    zoom: f32,
+    pad: f32,
+    
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -19,8 +24,8 @@ struct VertexOut {
 @vertex
 fn vs_main(in: VertexIn) -> VertexOut {
     var out: VertexOut;
-    let ndc_x =  (in.position.x / uniforms.canvas_size.x) * 2.0 - 1.0;
-    let ndc_y = 1.0 - (in.position.y / uniforms.canvas_size.y) * 2.0;
+    let ndc_x =  ((in.position.x - uniforms.gpu_view_x) * uniforms.zoom / uniforms.canvas_size.x) * 2.0 - 1.0;
+    let ndc_y = 1.0 - ((in.position.y - uniforms.gpu_view_y) * uniforms.zoom / uniforms.canvas_size.y) * 2.0;
     out.clip_position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
     out.uv    = in.uv;
     out.color = in.color;
