@@ -1,4 +1,4 @@
-use FastNote::gpu::first_line::StrokeRenderer;
+use FastNote::gpu::curve_renderer::CurveRenderer;
 use eframe::egui;
 use FastNote::app::App;
 use FastNote::icons::Icons;
@@ -34,7 +34,8 @@ fn main() -> eframe::Result {
             //     .write()
             //     .callback_resources
             //     .insert(renderer);
-            let renderer = StrokeRenderer::new(&wgpu_state.device, wgpu_state.target_format);
+            //
+            let renderer = CurveRenderer::new(&wgpu_state.device, wgpu_state.target_format);
             wgpu_state
                 .renderer
                 .write()

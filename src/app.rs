@@ -76,9 +76,10 @@ impl App {
         }
     }
     // Called once before the first frame.
-    pub fn new(_cc: &eframe::CreationContext<'_>, icons:Icons) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, icons:Icons) -> Self {
         let app = App::default(icons);
-
+        let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
+        println!("msaa samples: {:?}", wgpu_state.target_format);
         spawn_pen_thread(Arc::clone(&app.window_state), Arc::clone(&app.stylet_manager.events));
         app
     }

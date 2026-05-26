@@ -72,7 +72,7 @@ impl InputManager {
             }
             // egui::Event::PointerMoved(pos) => {}
             _ => {
-                println!("event {:?}", event);
+                // println!("event {:?}", event);
             }
         }
     }
@@ -84,6 +84,8 @@ impl InputManager {
     pub fn on_finger_start(self: &mut Self, state: &mut State, finger: &mut Finger) {}
 
     pub fn on_finger_move(self: &mut Self, state: &mut State, finger_id: usize, new_pos: Pos2) {
+
+        //Le zoom devrait être limité à 4
         let last_finger = &self.user_inputs.fingers[finger_id].clone();
         if self.nbr_finger() == 1 {
             // println!("delta: {}", new_pos - last_finger.pos);
@@ -109,5 +111,6 @@ impl InputManager {
 
     pub fn on_finger_end(self: &mut Self, state: &mut State, last_finger: &Finger, end_pos: Pos2) {
         // state.gpu_view.top_left = Pos2 { x: 0f32, y: 0f32 };
+        println!("Actual zoom: {}", state.gpu_view.zoom);
     }
 }
