@@ -1,17 +1,17 @@
 use eframe::egui;
 use egui::{Button, RichText};
 
-use crate::{app::App, pen::{DEFAULT_ERASER, DEFAULT_PEN}, state::Menu};
+use crate::{app::App, pen::{DEFAULT_ERASER, DEFAULT_PEN}, state::MenuMode};
     
 pub fn draw_ribbon(ui: &mut egui::Ui, app: &mut App){
     match app.state.get_menu() {
-        Menu::File => {
+        MenuMode::File => {
+            
+         }
+        MenuMode::Home => {
             
         }
-        Menu::Home => {
-            
-        }
-        Menu::Draw => {
+        MenuMode::Draw => {
             draw_draw_ribbon(ui, app);
         }
         _ => {

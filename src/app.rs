@@ -1,12 +1,9 @@
-use std::{path::{self, PathBuf}, sync::{Arc, Mutex}};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 use eframe::egui::{self, Rect};
-use egui::Color32;
 
-use crate::{edition::open_edition_mode, input_manager::InputManager, user_file::UserFile};
-use crate::user_project::UserProject;
+use crate::{edition::open_edition_mode, input_manager::InputManager, state::State, projects::user_file::UserFile};
 use crate::ui::ui::draw_gui;
 use crate::stylet::stylet_inputs::spawn_pen_thread;
-use crate::state::State;
 use crate::icons::Icons;
 use crate::stylet::stylet_manager::StyletManager;
 
@@ -21,30 +18,6 @@ pub struct App {
     pub window_state: Arc<Mutex<WindowState>>,
     // pub last_pen_state: Option<PenState>,
     //
-    
-
-}
-
-pub fn load_state() -> State {
-    let path = save_path();
-    if path.exists() {
-        let json = std::fs::read_to_string(path).unwrap_or_default();
-        serde_json::from_str(&json).unwrap_or_default()
-    } else {
-       State::default()
-
-    }
-}
-
-fn save_path() -> std::path::PathBuf {
-    let path = dirs::data_dir()                    // C:\Users\...\AppData\Roaming  (Windows)
-                                        // ~/.local/share               (Linux)
-                                        // ~/Library/Application Support (Mac)
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("fastnote")
-        .join("save.json");
-    println!("Path : {:?} {:?}", &path, path::absolute(&path));
-    path
 }
 
 #[derive(Default, Clone)]
@@ -63,7 +36,7 @@ impl App {
     fn default(icons: Icons) -> Self {
         Self {
             app_have_focus: false,
-            state: load_state(),
+            state: State::default(),
             icons: icons,
             gpu_rect: None,
             window_state: Arc::new(Mutex::new(WindowState::default())),
@@ -84,23 +57,49 @@ impl App {
         app
     }
 
-    pub fn open_project(&mut self, path: PathBuf){
-        self.state.opened_projects.push(UserProject::new(path.file_stem().and_then(|s| s.to_str()).unwrap_or("Unnamed").to_owned(), path.clone(), Color32::BLACK));
-        println!("Opened {:?}", path);
+    pub fn user_opened_project(&mut self, path: PathBuf){
+        // self.state.opened_projects.push(UserProject::new(path.file_stem().and_then(|s| s.to_str()).unwrap_or("Unnamed").to_owned(), path.clone(), Color32::BLACK));
+        
+        // println!("Opened {:?}", path);
+        // let result = self.save_opened_projects();
+        // if result.is_err(){
+        //     println!("failed to save");
+        // }
+        println!("Opened");
+        println!("path: {:?}", path);
+        let res = self.state.opened_projects.load_user_project_from_path(path.clone());
+        if res.is_err(){
+            println!("Not able to load path ! {:?}", path);
+        }
+        
+    }
+
+    pub fn user_created_project(&mut self){
+        let dialog = &self.state.new_project_dialog;
+        println!("Created");
+        println!("name: {}", dialog.name);    
+        println!("color: {:?}", dialog.color);    
+        println!("path: {:?}", dialog.path);
+        self.state.opened_projects.create_blank_project(dialog.path.clone().join(dialog.name.clone()), dialog.name.clone(), dialog.color);
     }
 
     pub fn save_state(&mut self) -> anyhow::Result<()>{
 
-        let path = save_path();
-        let json = serde_json::to_string_pretty(&self.state)?;
-        let tmp_path = path.with_extension("tmp");
-        std::fs::write(&tmp_path, json)?;
+        // let path = save_path();
+        // let json = serde_json::to_string_pretty(&self.state)?;
+        // let tmp_path = path.with_extension("tmp");
+        // std::fs::write(&tmp_path, json)?;
     
-        // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
-        std::fs::rename(&tmp_path, path)?;
+        // // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
+        // std::fs::rename(&tmp_path, path)?;
         
+        // Ok(())
+        println!("entire save of state deactivated");
         Ok(())
     }
+
+    
+    
     pub fn open_file(&mut self, file_path: PathBuf){
 
         
@@ -120,7 +119,7 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx();
-
+        ctx.set_cursor_icon(self.state.cursor_icon);
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);
@@ -138,17 +137,12 @@ impl eframe::App for App {
          self.stylet_manager.manage_events(&mut self.state, &has_focus, &self.gpu_rect);
          // println!("has focus{}", has_focus);
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl){
-            let _ = self.save_state();
             println!("Save state");
         }
         if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl){
-            self.state = load_state();
             println!("Load state");
         }
         if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl){
-            println!("Load state");
-            let json = serde_json::to_string_pretty(&self.state).unwrap_or_default();
-            println!("{}", json);
         }
         let window_pos = ctx.input(|i| i.viewport().inner_rect)
             .map(|r| r.min)

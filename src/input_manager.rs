@@ -2,6 +2,7 @@ use eframe::egui::{self, Event, Pos2, TouchId};
 
 use crate::state::State;
 
+
 #[derive(Clone)]
 pub struct Finger {
     pub id: TouchId,

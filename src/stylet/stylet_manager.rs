@@ -1,15 +1,13 @@
 use std::{path::PathBuf, sync::{Arc, Mutex}};
 
-use eframe::egui::{self, Color32, Pos2, Rect, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
 use crate::{
-    state::State,
-    strokes::{PenStroke, StrokePoint},
-    stylet::stylet::StyletState, user_file::UserFile,
+    state::State, strokes::{PenStroke, StrokePoint}, stylet::stylet::StyletState 
 };
 
 #[derive(Default)]
@@ -76,11 +74,11 @@ impl StyletManager {
         if !self.stylet.pressed {
             return;
         }
-        if state.current_file.is_none() {
-            state.current_file = Some(UserFile::new(PathBuf::from("")));
-        }
+        // if state.current_file.is_none() {
+        //     state.current_file = Some(UserFile::new(PathBuf::from("")));
+        // }
         if opt_gpu_rect.is_none() {
-            println!("Gpu rect is none\n Return\n");
+            // println!("Gpu rect is none\n Return\n");
             return;
         }
         let gpu_rect = opt_gpu_rect.unwrap();
@@ -123,9 +121,10 @@ impl StyletManager {
         // println!("tip: {tip_event_state:?}");
         //
         if tip_event_state.tip_state == TipState::Down{
-
+            state.cursor_icon = egui::CursorIcon::None;
             self.touch_gpu(state, tip_event_state.pos, tip_event_state.pressure,  tip_event_state.tool_type, opt_gpu_rect);
         }else{
+            state.cursor_icon = egui::CursorIcon::Default;
             if let Some(file) = &mut state.current_file{
                 let points = std::mem::take(&mut file.current_stroke);
                 let pen_stroke = PenStroke::new(Color32::RED, points, 1f32);

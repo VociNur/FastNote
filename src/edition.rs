@@ -26,7 +26,7 @@ pub fn open_edition_mode(theme: &mut ThemeData, ctx: &Context, open: &mut bool){
                 ui.color_edit_button_srgba(&mut theme.menu_bg);
             });
             ui.add(egui::Slider::new(&mut theme.menu_size_text, 8.0..=40.0).text("Size menu"));
-            ui.add(egui::Slider::new(&mut theme.menu_size_text, 0.0..=1.0).text("Rel size menu"));
+            ui.add(egui::Slider::new(&mut theme.menu_size_text, 8.0..=40.0).text("Rel size menu"));
             ui.add(egui::Slider::new(&mut theme.space_between_menu_and_ribbon, 0.0..=40.0).text("Space between menu and ribbon"));
             ui.horizontal(|ui|{    
                 ui.label("Foreground");

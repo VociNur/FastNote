@@ -1,0 +1,40 @@
+use eframe::egui;
+use std::path::PathBuf;
+
+use egui::Color32;
+use serde::{Deserialize, Serialize};
+
+use crate::{paths::MAIN_DATA, save_persistent_data};
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct UserProject {
+    pub path: PathBuf,//here is a folder !
+    pub name: String,
+    pub color: Color32,
+}
+
+impl UserProject {
+    pub fn create_blank_project(path: PathBuf, name: String, color: Color32) -> Self {
+        let s = Self { path:path, name, color };
+        let err_save = s.save();
+        if err_save.is_err(){
+            println!("An error while saving the file: {:?}", s.path);
+            println!("{:?}", err_save.err());
+        }
+        s
+    }
+
+    //     pub fn from_path(path: PathBuf){
+    //         //path here is a folder !
+    //         //
+    //         // load_persistent_data(path)
+    //     }
+        pub fn save(&self) -> anyhow::Result<()>{
+
+            let json = serde_json::to_string_pretty(self)?;
+            // println!("json {:?} ", json);
+            save_persistent_data(self.path.join(MAIN_DATA), &json);
+            Ok(())
+    }
+}

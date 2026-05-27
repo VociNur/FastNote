@@ -10,6 +10,7 @@ use egui::TextureHandle;
 pub struct Icons {
     //File
     pub open_folder: egui::TextureHandle,
+    pub new_folder: egui::TextureHandle,
     //Draw
     pub pen: egui::TextureHandle,
     pub eraser: egui::TextureHandle,
@@ -30,6 +31,11 @@ impl Icons {
             open_folder: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/open_folder.png"),
+            ),
+            new_folder: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/plus.png"),
+                
             ),
             notebook: load(
                 ctx,
