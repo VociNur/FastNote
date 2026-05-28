@@ -19,6 +19,7 @@ pub mod strokes;
 pub mod input_manager;
 pub mod gpuview;
 pub mod paths;
+pub mod file_tree_state;
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");
 //     let r = u8::from_str_radix(&hx[0..2],16).unwrap();

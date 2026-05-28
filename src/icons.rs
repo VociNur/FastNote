@@ -16,6 +16,11 @@ pub struct Icons {
     pub pen: egui::TextureHandle,
     pub eraser: egui::TextureHandle,
     pub notebook: egui::TextureHandle,
+    //Left
+    
+    pub bold_right_arrow: egui::TextureHandle,
+    pub down_arrow: egui::TextureHandle,
+    pub bold_down_arrow: egui::TextureHandle,
 }
 
 impl Icons {
@@ -46,6 +51,18 @@ impl Icons {
             notebook: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/notebook.png"),
+            ),
+            bold_right_arrow: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/left/bold_right_arrow.png"),
+            ),
+            down_arrow: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/left/down_arrow.png"),
+            ),
+            bold_down_arrow: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/left/bold_down_arrow.png"),
             ),
         }
     }

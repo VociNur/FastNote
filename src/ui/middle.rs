@@ -1,4 +1,4 @@
-use eframe::egui;
+use eframe::egui::{self, Color32};
 
 use egui::{Button, Panel, RichText};
 
@@ -184,8 +184,13 @@ pub fn draw_home_menu_left(ui: &mut egui::Ui, app: &mut App) {
 }
 
 pub fn show_notebook(ui: &mut egui::Ui, app: &mut App, project: &UserProject) {
+    let mut is_showing_tree = false;
     egui::Frame {
-        fill: app.state.theme.ribbon_bg,
+        fill: app
+            .state
+            .theme
+            .ribbon_bg
+            .lerp_to_gamma(*project.get_color(), project.get_color().intensity()),
         stroke: egui::Stroke::NONE, // pas de bordure
         corner_radius: egui::CornerRadius {
             nw: 10,
@@ -211,48 +216,184 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &mut App, project: &UserProject) {
         ui.horizontal(|ui| {
             let notebook_icon = egui::Image::new(&app.icons.notebook).fit_to_original_size(0.1);
             ui.add(notebook_icon);
-            let text_pen = RichText::new(project.get_name()).color(app.state.theme.ribbon_fg);
-            ui.label(text_pen);
+
+            //Ici sera un bouton et pas un texte
+            // let text_pen = RichText::new(project.get_name()).color(app.state.theme.ribbon_fg);
+            // ui.label(text_pen);
+            //
+
+            let project_text = RichText::new(project.get_name())
+                .size(40f32)
+                .color(Color32::BLACK)
+                .strong();
+            let down_arrow = app.icons.bold_down_arrow.clone();
+            let right_arrow = app.icons.bold_right_arrow.clone();
+            let header = egui::CollapsingHeader::new(project_text)
+                .icon(|ui, openness, response| {
+                    let open = openness > 0.5;
+                    let notebook_icon = if open { down_arrow } else { right_arrow };
+
+                    // 2. Définir la taille de ton icône (ex: 16x16 pixels)
+                    let icon_size = egui::vec2(16.0, 16.0);
+
+                    // 3. Centrer le rectangle de l'icône autour du point central
+                    let icon_rect = egui::Rect::from_center_size(response.rect.center(), icon_size);
+
+                    // 4. Dessiner l'image à la place du texte
+                    ui.painter().image(
+                        notebook_icon.id(), // L'ID de ta texture egui
+                        icon_rect,          // Où l'afficher
+                        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), // UV complet (0 à 1)
+                        egui::Color32::WHITE, // Teinte (WHITE pour garder les couleurs d'origine)
+                    );
+                })
+                .id_salt(&project.path)
+                .default_open(true)
+                .show(ui, |_ui| {});
+            is_showing_tree = header.fully_open();
+
+            header.header_response.context_menu(|ui| {
+                if ui.button("📁 Nouveau dossier").clicked() {
+                    create_default_folder(&project.path.join(NOTEBOOK), app);
+                    ui.close();
+                }
+                if ui.button("📄 Nouveau fichier").clicked() {
+                    create_default_file(&project.path.join(NOTEBOOK), app);
+                    ui.close();
+                }
+            });
         });
-        show_tree(ui, &project.path.join(NOTEBOOK), app);
-        // show_tree(ui, app, &project.path);
+        let project_path = project.path.join(NOTEBOOK);
+        if !project_path.exists() {
+            println!("Notebook creation...");
+            let err = std::fs::create_dir_all(&project_path);
+            if err.is_err() {
+                println!("could not create notebook ...");
+            } else {
+                println!("Notebook created !");
+            }
+        } // Header du notebook — cliquable pour plier/déplier, clic droit pour créer
+        if is_showing_tree {
+            show_tree(ui, &project_path, app);
+        }
     });
 }
 
 fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &mut App) {
-    for entry in std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .filter_map(|e| e.ok())
-    {
-        // println!("{:?}", entry.file_name());
-        let path = entry.path();
-        let name = path.file_name().unwrap_or_default().to_string_lossy();
+    let entries = sorted_entries(dir); // on verra le tri plus tard
+
+    for path in entries {
+        let name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let name_text = RichText::new(&name).color(Color32::BLACK).size(24.);
+        let is_renaming = app.state.file_tree.renaming.as_ref() == Some(&path);
 
         if path.is_dir() {
-            // 📁 Dossier → cliquable pour déplier
-            let mut text = RichText::new(format!("{name}"));
-            text = text.size(20.);
-            text = text.color(app.state.theme.notebook_tree_text_folder_fg);
-            egui::CollapsingHeader::new(text).show(ui, |ui| {
-                ui.style_mut().text_styles.insert(
-                    egui::TextStyle::Body,
-                    egui::FontId::new(28.0, egui::FontFamily::Proportional),
-                );
-
-                show_tree(ui, &path, app); // récursif → contenu du dossier
-            });
+            if is_renaming {
+                let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
+                if response.lost_focus()
+                    || ui.input(|i| {
+                        i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
+                    })
+                {
+                    let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
+                    std::fs::rename(&path, &new_path).ok();
+                    app.state.file_tree.renaming = None;
+                }
+            } else {
+                let header = egui::CollapsingHeader::new(name_text)
+                    .id_salt(&path)
+                    .show(ui, |ui| {
+                        show_tree(ui, &path, app);
+                    });
+                header.header_response.context_menu(|ui| {
+                    if ui.button("📁 Nouveau dossier").clicked() {
+                        create_default_folder(&path, app);
+                        ui.close();
+                    }
+                    if ui.button("📄 Nouveau fichier").clicked() {
+                        create_default_file(&path, app);
+                        ui.close();
+                    }
+                    if ui.button("✏ Renommer").clicked() {
+                        app.state.file_tree.renaming = Some(path.clone());
+                        app.state.file_tree.rename_buf = name.clone();
+                        ui.close();
+                    }
+                    if ui.button("🗑 Supprimer").clicked() {
+                        std::fs::remove_dir_all(&path).ok();
+                        ui.close();
+                    }
+                });
+            }
         } else {
-            // 📄 Fichier → cliquable pour ouvrir
-            let mut text = RichText::new(name.clone());
-            text = text.size(20.);
-            text = text.color(app.state.theme.notebook_tree_text_file_fg);
-            let button = Button::new(text).fill(app.state.theme.notebook_tree_text_file_bg);
-            let response_button = ui.add(button);
-            if response_button.clicked() {
-                println!("Name opened: {:?}", name);
-                app.open_file(path);
+            // Renommage inline
+            if is_renaming {
+                let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
+
+                let confirmed = response.lost_focus()
+                    || ui.input(|i| i.key_pressed(egui::Key::Enter))
+                    || ui.input(|i| i.key_pressed(egui::Key::Escape));
+
+                if confirmed {
+                    let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
+                    std::fs::rename(&path, &new_path).ok();
+                    app.state.file_tree.renaming = None;
+                }
+            } else {
+                // let text = RichText::new(&name)
+                // .size(20.)
+                // .color(app.stte.theme.notebook_tree_text_file_fg);
+                let button = Button::new(name_text).fill(Color32::from_gray(128));
+                let response = ui.add(button);
+
+                if response.clicked() {
+                    app.open_file(path.clone());
+                }
+
+                // Menu clic droit sur le fichier
+                response.context_menu(|ui| {
+                    if ui.button("✏ Renommer").clicked() {
+                        app.state.file_tree.renaming = Some(path.clone());
+                        app.state.file_tree.rename_buf = name.clone();
+                        ui.close();
+                    }
+                    if ui.button("🗑 Supprimer").clicked() {
+                        std::fs::remove_file(&path).ok();
+                        ui.close();
+                    }
+                });
             }
         }
     }
+}
+
+fn create_default_folder(parent: &std::path::Path, app: &mut App) {
+    let name = "Nouveau dossier";
+    let path = parent.join(name);
+    std::fs::create_dir_all(&path).ok();
+    // Active le renommage immédiatement
+    app.state.file_tree.renaming = Some(path);
+    app.state.file_tree.rename_buf = name.to_string();
+}
+
+fn create_default_file(parent: &std::path::Path, app: &mut App) {
+    let name = "Nouveau fichier.fn";
+    let path = parent.join(name);
+    std::fs::write(&path, "{}").ok();
+    // Active le renommage immédiatement
+    app.state.file_tree.renaming = Some(path);
+    app.state.file_tree.rename_buf = name.to_string();
+}
+
+fn sorted_entries(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .collect()
 }

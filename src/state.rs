@@ -3,7 +3,7 @@ use eframe::egui;
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{edition::open_edition_mode, get_working_path, gpuview::GpuView, has_persisent_data, load_persistent_data, paths::OPENED_PROJECTS_FILE, pen::{DEFAULT_PEN, Pen}, projects::{opened_projects::OpenedProjectsManager, user_file::UserFile, user_project::UserProject}, themes::ThemeData, ui::create_project_modal_window::NewProjectDialog};
+use crate::{edition::open_edition_mode, file_tree_state::FileTreeState, get_working_path, gpuview::GpuView, has_persisent_data, load_persistent_data, paths::OPENED_PROJECTS_FILE, pen::{DEFAULT_PEN, Pen}, projects::{opened_projects::OpenedProjectsManager, user_file::UserFile, user_project::UserProject}, themes::ThemeData, ui::create_project_modal_window::NewProjectDialog};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum MenuMode {
@@ -39,10 +39,13 @@ pub struct State{
     menu_mode: MenuMode,
     pub theme: ThemeData,
 
-
+    //File
     pub new_project_dialog: NewProjectDialog, 
     pub opened_projects: OpenedProjectsManager,
     pub current_file: Option<UserFile>,
+
+    //Menu
+    pub file_tree: FileTreeState,
 
     pub pen: Pen,
     pub cursor_icon: egui::CursorIcon,
@@ -59,6 +62,7 @@ impl Default for State{
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
             pen: DEFAULT_PEN,
+            file_tree: FileTreeState::default(),
             new_project_dialog: NewProjectDialog::default(), 
             cursor_icon: egui::CursorIcon::Default,
             opened_projects: OpenedProjectsManager::default(),
@@ -74,6 +78,7 @@ impl State{
         Self{
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
+            file_tree: FileTreeState::default(),
             // value: 3,
             pen: DEFAULT_PEN,
             new_project_dialog: NewProjectDialog::default(), 
