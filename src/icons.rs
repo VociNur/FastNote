@@ -11,6 +11,7 @@ pub struct Icons {
     //File
     pub open_folder: egui::TextureHandle,
     pub new_folder: egui::TextureHandle,
+    pub cross_folder: egui::TextureHandle,
     //Draw
     pub pen: egui::TextureHandle,
     pub eraser: egui::TextureHandle,
@@ -35,6 +36,11 @@ impl Icons {
             new_folder: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/plus.png"),
+                
+            ),
+            cross_folder: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/cross.png"),
                 
             ),
             notebook: load(

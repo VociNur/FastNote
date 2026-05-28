@@ -10,8 +10,8 @@ use crate::{paths::MAIN_DATA, save_persistent_data};
 #[serde(default)]
 pub struct UserProject {
     pub path: PathBuf,//here is a folder !
-    pub name: String,
-    pub color: Color32,
+    name: String,
+    color: Color32,
 }
 
 impl UserProject {
@@ -30,11 +30,36 @@ impl UserProject {
     //         //
     //         // load_persistent_data(path)
     //     }
-        pub fn save(&self) -> anyhow::Result<()>{
+    pub fn save(&self) -> anyhow::Result<()>{
 
-            let json = serde_json::to_string_pretty(self)?;
-            // println!("json {:?} ", json);
-            save_persistent_data(self.path.join(MAIN_DATA), &json);
-            Ok(())
+        let json = serde_json::to_string_pretty(self)?;
+        // println!("json {:?} ", json);
+        save_persistent_data(self.path.join(MAIN_DATA), &json);
+        Ok(())
     }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn get_color(&self) -> &Color32 {
+        &self.color
+    }
+
+    pub fn set_name(&mut self, name: String){
+        self.name = name;
+        let err = self.save();
+        if err.is_err(){
+            println!("Could not save project ! {:?}", self.path)
+        }
+    }
+
+    pub fn set_color(&mut self, color: Color32){
+        self.color = color;
+        let err = self.save();
+        if err.is_err(){
+            println!("Could not save project ! {:?}", self.path)
+        }
+    }
+
+    
 }

@@ -3,7 +3,10 @@ use eframe::egui;
 use egui::{Button, Panel, RichText};
 
 use crate::{
-    app::App, get_working_path, paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER}, projects::user_project::UserProject,
+    app::App,
+    get_working_path,
+    paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER},
+    projects::user_project::UserProject,
     state::MenuMode,
 };
 
@@ -20,14 +23,15 @@ pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
 
 //FILE
 pub fn draw_file_menu_middle(ui: &mut egui::Ui, app: &mut App) {
+    let mut opt_to_remove = None;
     ui.vertical(|ui| {
-        for project in &app.state.opened_projects.projects {
+        for project in &mut app.state.opened_projects.projects {
             egui::Frame {
                 fill: app
                     .state
                     .theme
                     .ribbon_bg
-                    .lerp_to_gamma(project.color, project.color.intensity()),
+                    .lerp_to_gamma(*project.get_color(), project.get_color().intensity()),
                 stroke: egui::Stroke::NONE, // pas de bordure
                 corner_radius: egui::CornerRadius {
                     nw: 10,
@@ -54,12 +58,46 @@ pub fn draw_file_menu_middle(ui: &mut egui::Ui, app: &mut App) {
                     let notebook_icon =
                         egui::Image::new(&app.icons.notebook).fit_to_original_size(0.1);
                     ui.add(notebook_icon);
-                    let text_pen = RichText::new(&project.name).color(app.state.theme.ribbon_fg);
-                    ui.label(text_pen);
+                    // let text_pen =
+                    //     RichText::new(project.get_name()).color(app.state.theme.ribbon_fg);
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
+                            let mut name = project.get_name().to_string();
+                            if ui.text_edit_singleline(&mut name).changed() {
+                                project.set_name(name);
+                            }
+                            let mut color = *project.get_color();
+                            if ui.color_edit_button_srgba(&mut color).changed() {
+                                project.set_color(color);
+                            }
+
+                            let icon = egui::Image::new(&app.icons.cross_folder)
+                                .fit_to_exact_size(egui::vec2(24.0, 24.0));
+                            let cross_button =
+                                ui.add_sized([24.0, 24.0], egui::Button::image(icon).frame(false));
+                            if cross_button.clicked() {
+                                opt_to_remove = Some(project.path.clone());
+                            }
+                        });
+                        let path_str = project
+                            .path
+                            .canonicalize()
+                            .unwrap_or(project.path.clone())
+                            .to_string_lossy()
+                            .to_string();
+                        let path_text = RichText::new(path_str).color(app.state.theme.ribbon_fg);
+                        ui.label(path_text);
+                    });
                 });
             });
         }
     });
+    if let Some(path_to_remove) = opt_to_remove {
+        println!("Removeing project: {path_to_remove:?}");
+        app.state
+            .opened_projects
+            .unload_user_project_from_path(path_to_remove);
+    }
 }
 pub fn draw_file_menu_left(ui: &mut egui::Ui, app: &mut App) {
     ui.vertical(|ui| {
@@ -173,7 +211,7 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &mut App, project: &UserProject) {
         ui.horizontal(|ui| {
             let notebook_icon = egui::Image::new(&app.icons.notebook).fit_to_original_size(0.1);
             ui.add(notebook_icon);
-            let text_pen = RichText::new(&project.name).color(app.state.theme.ribbon_fg);
+            let text_pen = RichText::new(project.get_name()).color(app.state.theme.ribbon_fg);
             ui.label(text_pen);
         });
         show_tree(ui, &project.path.join(NOTEBOOK), app);

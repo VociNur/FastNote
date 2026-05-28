@@ -38,10 +38,14 @@ impl OpenedProjectsManager {
     pub fn load_user_project_from_path(self: &mut Self, path: PathBuf) -> anyhow::Result<()> {
         let path_main = path.join(MAIN_DATA);
         let json = load_persistent_data(path_main)?;
-        let cast: UserProject = serde_json::from_str(&json)?;
+        let mut cast: UserProject = serde_json::from_str(&json)?;
+        cast.path = path;
         self.projects.push(cast);
         self.save_opened_project_manager();
         Ok(())
+    }
+    pub fn unload_user_project_from_path(self: &mut Self, path: PathBuf){
+        self.projects.retain(|f| f.path.canonicalize().is_ok() && path.canonicalize().is_ok() && f.path.canonicalize().unwrap() != path.canonicalize().unwrap());
     }
 
     pub fn load_opened_project_manager(&mut self) -> anyhow::Result<()> {
