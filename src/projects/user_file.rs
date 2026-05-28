@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use eframe::egui::{self, Color32};
 use serde::{Deserialize, Serialize};
 
-use crate::{load_persistent_data, save_persistent_data, strokes::{PenStroke, StrokePoint}};
+use crate::{load_persistent_data, pen::Pen, save_persistent_data, strokes::{PenStroke, StrokePoint}};
 
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -49,9 +49,9 @@ impl UserFile{
             println!("Errorr when adding a stroke");
         }
     }
-    pub fn save_current_stroke(&mut self,){
+    pub fn save_current_stroke(&mut self, pen: &Pen){
         let points = std::mem::take(&mut self.current_stroke);
-        let pen_stroke = PenStroke::new(Color32::RED, points, 1f32);
+        let pen_stroke = PenStroke::new(pen.color, points, pen.size);
         self.add_stroke(pen_stroke);
     }
     pub fn erase_at(&mut self, pos: egui::Pos2, radius: f32) {

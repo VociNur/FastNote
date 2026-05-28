@@ -3,39 +3,36 @@ use egui::Color32;
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Pen{
     pub color: Color32,
-    pub size: u32,
-    pub erase: bool,
+    pub size: f32,
 }
 
 impl Default for Pen{
     fn default() -> Self {
-        Self { color: Default::default(), size: Default::default(), erase: Default::default() }
+        Self { color: Color32::BLACK, size: Default::default() }
     }
 }
 
 
 pub const DEFAULT_PEN: Pen = Pen {
     color: Color32::from_rgb(0, 0, 0),
-    size: 1,
-    erase: false,
+    size: 1.,
 };
 
 
 pub const DEFAULT_ERASER: Pen = Pen {
     color: Color32::from_rgb(0, 0, 0),
-    size: 1,
-    erase: true,
+    size: 1.,
 };
 
 impl Pen{
-    pub fn new(color: Color32, size: u32, erase: bool)-> Self{
+    pub fn new(color: Color32, size: f32)-> Self{
         Self{
             color,
             size,
-            erase
         }
     }
 }

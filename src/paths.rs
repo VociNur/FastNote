@@ -5,6 +5,7 @@ pub const PERSISTENT: &str = "fastnote/persistent";
 pub const PROJECT_DEFAULT_FOLDER: &str = "fastnote/persistent/projects/";
 
 
+pub const COLOR_PALETTE : &str = "color_palette.json";
 //relative path for project
 pub const MAIN_DATA : &str = "main_data.json";
 pub const NOTEBOOK : &str = "notebook";

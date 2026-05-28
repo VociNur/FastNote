@@ -1,24 +1,22 @@
-use std::path::PathBuf;
 
 use eframe::egui::{self, Color32};
 
 use crate::{
     app::App,
     get_working_path,
-    paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER, TREE_ORDER_FILE},
+    paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER},
     projects::user_project::UserProject,
     state::MenuMode,
-    tree_order::{save_order, sorted_entries, TreeItem},
+    tree_order::{save_order, sorted_entries},
 };
-use egui::{Button, Panel, RichText};
+use egui::{Button, RichText};
 
 pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
     egui::Panel::left("left_panel").resizable(true).show_inside(ui, |ui| {
         //.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
         match app.state.get_menu() {
             MenuMode::File => draw_file_menu_left(ui, app),
-            MenuMode::Home => draw_home_menu_left(ui, app),
-            _ => {}
+            _ => {draw_home_menu_left(ui, app)}
         }
     });
 }
@@ -105,7 +103,7 @@ pub fn draw_file_menu_left(ui: &mut egui::Ui, app: &mut App) {
     ui.vertical(|ui| {
         ui.add_space(10f32);
         let new_folder_icon =
-            egui::Image::new(&app.icons.new_folder).fit_to_exact_size(egui::vec2(32.0, 32.0));
+            egui::Image::new(&app.icons.plus).fit_to_exact_size(egui::vec2(32.0, 32.0));
         let new_folder_button = ui.add_sized(
             [32.0, 32.0],
             egui::Button::image(new_folder_icon).frame(false),

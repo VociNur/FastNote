@@ -10,7 +10,7 @@ use egui::TextureHandle;
 pub struct Icons {
     //File
     pub open_folder: egui::TextureHandle,
-    pub new_folder: egui::TextureHandle,
+    pub plus: egui::TextureHandle,
     pub cross_folder: egui::TextureHandle,
     //Draw
     pub pen: egui::TextureHandle,
@@ -21,6 +21,8 @@ pub struct Icons {
     pub bold_right_arrow: egui::TextureHandle,
     pub down_arrow: egui::TextureHandle,
     pub bold_down_arrow: egui::TextureHandle,
+
+    pub edit_pen: egui::TextureHandle,
 }
 
 impl Icons {
@@ -38,7 +40,7 @@ impl Icons {
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/open_folder.png"),
             ),
-            new_folder: load(
+            plus: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/plus.png"),
                 
@@ -63,6 +65,10 @@ impl Icons {
             bold_down_arrow: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/left/bold_down_arrow.png"),
+            ),
+            edit_pen: load(
+                ctx,
+                &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/ribbon/edit_pen.png"),
             ),
         }
     }

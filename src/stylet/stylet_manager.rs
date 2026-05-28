@@ -1,13 +1,13 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use std::sync::{Arc, Mutex};
 
-use eframe::egui::{self, Color32, Pos2, Rect};
+use eframe::egui::{self, Pos2, Rect};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
 use crate::{
-    state::State, strokes::{PenStroke, StrokePoint}, stylet::stylet::StyletState 
+    state::State, strokes::StrokePoint, stylet::stylet::StyletState 
 };
 
 #[derive(Default)]
@@ -126,7 +126,7 @@ impl StyletManager {
         }else{
             state.cursor_icon = egui::CursorIcon::Default;
             if let Some(file) = &mut state.current_file{
-                file.save_current_stroke();
+                file.save_current_stroke(&state.color_palette.pen);
             }
         }
     }

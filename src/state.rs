@@ -3,7 +3,7 @@ use eframe::egui;
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{edition::open_edition_mode, file_tree_state::FileTreeState, get_working_path, gpuview::GpuView, has_persisent_data, load_persistent_data, paths::OPENED_PROJECTS_FILE, pen::{DEFAULT_PEN, Pen}, projects::{opened_projects::OpenedProjectsManager, user_file::UserFile, user_project::UserProject}, themes::ThemeData, ui::create_project_modal_window::NewProjectDialog};
+use crate::{color_palette::ColorPalette, edition::open_edition_mode, file_tree_state::FileTreeState, gpuview::GpuView, projects::{opened_projects::OpenedProjectsManager, user_file::UserFile}, themes::ThemeData, ui::create_project_modal_window::NewProjectDialog};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum MenuMode {
@@ -15,7 +15,11 @@ pub enum MenuMode {
     View,
     Edition,
 }
-
+impl Default for MenuMode{
+    fn default() -> Self {
+        MenuMode::File
+    }
+}
 impl MenuMode {
     pub fn as_str(&self) -> &'static str{
         match self {
@@ -31,10 +35,6 @@ impl MenuMode {
 }
 
 
-// #[derive(Serialize, Deserialize, Debug)]
-// 
-// #[derive(Serialize, Deserialize)]
-// #[serde(default)]
 pub struct State{
     menu_mode: MenuMode,
     pub theme: ThemeData,
@@ -47,8 +47,9 @@ pub struct State{
     //Menu
     pub file_tree: FileTreeState,
 
-    pub pen: Pen,
+    // pub pen: Pen,
     pub cursor_icon: egui::CursorIcon,
+    pub color_palette: ColorPalette,
     pub edition_open: bool,
 
 
@@ -57,11 +58,11 @@ pub struct State{
 
 impl Default for State{
     fn default() -> Self {
-        
+        let color_palette = ColorPalette::load().unwrap_or(ColorPalette::default());
         Self{
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
-            pen: DEFAULT_PEN,
+            color_palette: color_palette,
             file_tree: FileTreeState::default(),
             new_project_dialog: NewProjectDialog::default(), 
             cursor_icon: egui::CursorIcon::Default,
@@ -74,21 +75,6 @@ impl Default for State{
 }
 
 impl State{
-    pub fn new() -> Self{
-        Self{
-            menu_mode: MenuMode::File,
-            theme: ThemeData::default(),
-            file_tree: FileTreeState::default(),
-            // value: 3,
-            pen: DEFAULT_PEN,
-            new_project_dialog: NewProjectDialog::default(), 
-            cursor_icon: egui::CursorIcon::Default,
-            opened_projects: OpenedProjectsManager::default(),
-            current_file: None,
-            edition_open: false,
-            gpu_view: GpuView::default(), 
-        }
-    }
     pub fn set_menu(&mut self, menu: MenuMode, ctx: &Context){
         if menu == MenuMode::Edition {
             self.edition_open = true;

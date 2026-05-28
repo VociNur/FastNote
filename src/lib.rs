@@ -1,10 +1,8 @@
 // #![warn(clippy::all, rust_2018_idioms)]
 
-use std::path::{self, PathBuf};
+use std::path::PathBuf;
 
 use eframe::egui;
-
-use crate::paths::PERSISTENT;
 
 // use egui::Color32;
 pub mod app;
@@ -23,6 +21,7 @@ pub mod gpuview;
 pub mod paths;
 pub mod file_tree_state;
 pub mod tree_order;
+pub mod color_palette;
 
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");
