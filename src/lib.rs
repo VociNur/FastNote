@@ -2,6 +2,8 @@
 
 use std::path::{self, PathBuf};
 
+use eframe::egui;
+
 use crate::paths::PERSISTENT;
 
 // use egui::Color32;
@@ -20,6 +22,8 @@ pub mod input_manager;
 pub mod gpuview;
 pub mod paths;
 pub mod file_tree_state;
+pub mod tree_order;
+
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");
 //     let r = u8::from_str_radix(&hx[0..2],16).unwrap();
@@ -133,4 +137,11 @@ fn load_persistent_data(path: PathBuf) -> anyhow::Result<String> {
            Err(anyhow::anyhow!("File not found"))
         }
 
+}
+fn distance_point_to_segment(p: egui::Pos2, a: egui::Pos2, b: egui::Pos2) -> f32 {
+    let ab = b - a;
+    let ap = p - a;
+    let t  = (ap.dot(ab) / ab.dot(ab)).clamp(0.0, 1.0);
+    let closest = a + ab * t;
+    (p - closest).length()
 }

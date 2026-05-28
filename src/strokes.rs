@@ -2,6 +2,8 @@ use eframe::egui::{self, Pos2, Rect};
 use serde::{Deserialize, Serialize};
 
 use eframe::egui::Color32;
+
+use crate::distance_point_to_segment;
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct StrokePoint {
     pub pos: Pos2,
@@ -53,5 +55,19 @@ impl PenStroke{
 
         
         PenStroke{color, points, width, bbox, deleted: false}
+    }
+}
+
+impl PenStroke{
+    
+    pub fn intersects_point(self: &mut Self, pos: egui::Pos2, radius: f32) -> bool {
+        for window in self.points.windows(2) {
+            let a = window[0].pos;
+            let b = window[1].pos;
+            if distance_point_to_segment(pos, a, b) < radius {
+                return true;
+            }
+        }
+        false
     }
 }

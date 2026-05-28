@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 
 #[derive(Default)]
@@ -8,4 +8,5 @@ pub struct FileTreeState{
     pub dragging: Option<PathBuf>,
     pub drop_target: Option<PathBuf>,
     pub confirm_cross_notebook: Option<(PathBuf, PathBuf)>,
+    pub open_dirs: HashSet<PathBuf>,
 }

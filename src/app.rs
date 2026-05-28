@@ -101,11 +101,14 @@ impl App {
     
     
     pub fn open_file(&mut self, file_path: PathBuf){
-
-        
-        let json = std::fs::read_to_string(&file_path).unwrap_or_default();
-        let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default();
-        self.state.current_file = Some(user_file);
+        // println!("file path: {:?}", file_path);
+        // let json = std::fs::read_to_string(&file_path).unwrap_or_default();
+        // let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default()
+        let user_file = UserFile::from_path(file_path.clone());
+        if user_file.is_err(){
+            println!("Could not load file {:?}", file_path);
+        }
+        self.state.current_file = Some(user_file.unwrap());
     }
     
 }

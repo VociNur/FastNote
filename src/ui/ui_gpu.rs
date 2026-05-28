@@ -19,12 +19,12 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
                 .state
                 .current_file
                 .as_ref()
-                .map(|f| f.current_stroke.clone())
+                .map(|f| f.get_cloned_current_stroke())
                 .unwrap_or_default();
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
             let current_stroke = app.state.current_file
             .as_ref()
-            .map(|f| f.current_stroke.clone())
+            .map(|f| f.get_cloned_current_stroke())
             .unwrap_or_default();
 
             if let Some(last) = current_stroke.last() {
@@ -58,7 +58,7 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
 
             let strokes = app.state.current_file
                 .as_ref()
-                .map(|f| f.strokes.clone())
+                .map(|f| f.get_cloned_strokes())
                 .unwrap_or_default();
 
             ui.painter().add(egui_wgpu::Callback::new_paint_callback(

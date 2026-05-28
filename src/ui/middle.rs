@@ -1,17 +1,19 @@
-use eframe::egui::{self, Color32};
+use std::path::PathBuf;
 
-use egui::{Button, Panel, RichText};
+use eframe::egui::{self, Color32};
 
 use crate::{
     app::App,
     get_working_path,
-    paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER},
+    paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER, TREE_ORDER_FILE},
     projects::user_project::UserProject,
     state::MenuMode,
+    tree_order::{save_order, sorted_entries, TreeItem},
 };
+use egui::{Button, Panel, RichText};
 
 pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
-    egui::Panel::left("left_panel").show_inside(ui, |ui| {
+    egui::Panel::left("left_panel").resizable(true).show_inside(ui, |ui| {
         //.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
         match app.state.get_menu() {
             MenuMode::File => draw_file_menu_left(ui, app),
@@ -280,96 +282,155 @@ pub fn show_notebook(ui: &mut egui::Ui, app: &mut App, project: &UserProject) {
 }
 
 fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &mut App) {
-    let entries = sorted_entries(dir); // on verra le tri plus tard
+    let mut items = sorted_entries(dir);
+    let dir = dir.to_path_buf();
 
-    for path in entries {
-        let name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let name_text = RichText::new(&name).color(Color32::BLACK).size(24.);
-        let is_renaming = app.state.file_tree.renaming.as_ref() == Some(&path);
+    let response = egui_dnd::dnd(ui, dir.to_str().unwrap_or("tree")).show_vec(
+        &mut items,
+        |ui, item, handle, state| {
+            let path = &item.path;
+            let name = path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            let is_renaming = app.state.file_tree.renaming.as_ref() == Some(path);
+            if !item.is_dir {
+                if is_renaming {
+                    // Renommage : pas de drag, juste le champ texte
+                    let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
+                    if response.lost_focus()
+                        || ui.input(|i| {
+                            i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
+                        })
+                    {
+                        let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
+                        std::fs::rename(path, &new_path).ok();
+                        app.state.file_tree.renaming = None;
+                    }
+                } else {
+                    // let text = RichText::new(&name)
+                    // .size(20.)
+                    // .color(app.stte.theme.notebook_tree_text_file_fg);
+                    //
+                
+                    let label = RichText::new(format!("{}", name))
+                            .color(Color32::BLACK)
+                            .size(24.);
+                    let button = Button::new(label).fill(Color32::from_gray(128));
+                    let response = ui.add(button);
 
-        if path.is_dir() {
-            if is_renaming {
-                let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
-                if response.lost_focus()
-                    || ui.input(|i| {
-                        i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
-                    })
-                {
-                    let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
-                    std::fs::rename(&path, &new_path).ok();
-                    app.state.file_tree.renaming = None;
-                }
-            } else {
-                let header = egui::CollapsingHeader::new(name_text)
-                    .id_salt(&path)
-                    .show(ui, |ui| {
-                        show_tree(ui, &path, app);
+                    if response.clicked() {
+                        app.open_file(path.clone());
+                    }
+
+                    // Menu clic droit sur le fichier
+                    response.context_menu(|ui| {
+                        if ui.button("✏ Renommer").clicked() {
+                            app.state.file_tree.renaming = Some(path.clone());
+                            app.state.file_tree.rename_buf = name.clone();
+                            ui.close();
+                        }
+                        if ui.button("🗑 Supprimer").clicked() {
+                            std::fs::remove_file(&path).ok();
+                            ui.close();
+                        }
                     });
-                header.header_response.context_menu(|ui| {
-                    if ui.button("📁 Nouveau dossier").clicked() {
-                        create_default_folder(&path, app);
-                        ui.close();
-                    }
-                    if ui.button("📄 Nouveau fichier").clicked() {
-                        create_default_file(&path, app);
-                        ui.close();
-                    }
-                    if ui.button("✏ Renommer").clicked() {
-                        app.state.file_tree.renaming = Some(path.clone());
-                        app.state.file_tree.rename_buf = name.clone();
-                        ui.close();
-                    }
-                    if ui.button("🗑 Supprimer").clicked() {
-                        std::fs::remove_dir_all(&path).ok();
-                        ui.close();
-                    }
-                });
-            }
-        } else {
-            // Renommage inline
-            if is_renaming {
-                let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
-
-                let confirmed = response.lost_focus()
-                    || ui.input(|i| i.key_pressed(egui::Key::Enter))
-                    || ui.input(|i| i.key_pressed(egui::Key::Escape));
-
-                if confirmed {
-                    let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
-                    std::fs::rename(&path, &new_path).ok();
-                    app.state.file_tree.renaming = None;
                 }
             } else {
-                // let text = RichText::new(&name)
-                // .size(20.)
-                // .color(app.stte.theme.notebook_tree_text_file_fg);
-                let button = Button::new(name_text).fill(Color32::from_gray(128));
-                let response = ui.add(button);
+                if is_renaming {
+                    // Renommage : pas de drag, juste le champ texte
+                    let response = ui.text_edit_singleline(&mut app.state.file_tree.rename_buf);
+                    if response.lost_focus()
+                        || ui.input(|i| {
+                            i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)
+                        })
+                    {
+                        let new_path = path.parent().unwrap().join(&app.state.file_tree.rename_buf);
+                        std::fs::rename(path, &new_path).ok();
+                        app.state.file_tree.renaming = None;
+                    }
+                } else if item.is_dir {
+                    let canonical = path.canonicalize().unwrap_or(path.clone());
+                    let is_open = app.state.file_tree.open_dirs.contains(&canonical);
 
-                if response.clicked() {
-                    app.open_file(path.clone());
+                    ui.horizontal(|ui| {
+                        // Seule cette ligne est la poignée — pas les enfants
+                        handle.ui(ui, |ui| {
+                            let arrow = if is_open { "▼" } else { "▶" };
+                            let label = RichText::new(format!("{} {}", arrow, name))
+                                .color(Color32::BLACK)
+                                .size(24.);
+
+                            // let response = ui.label(label);
+                            let response = ui.add(
+                                egui::Label::new(
+                                    RichText::new(format!("{} {}", arrow, name))
+                                        .color(Color32::BLACK)
+                                        .size(24.),
+                                )
+                                .sense(egui::Sense::click()),
+                            );
+                            if response.clicked() {
+                                println!("clicked");
+                                if is_open {
+                                    println!("opened");
+                                    app.state.file_tree.open_dirs.remove(path);
+                                } else {
+                                    let res_path = path.canonicalize();
+                                    if res_path.is_err() {
+                                        println!("Could not canonicalize");
+                                    } else {
+                                        let can_path = res_path.unwrap();
+                                        app.state.file_tree.open_dirs.insert(can_path);
+                                    }
+                                    println!("try to open");
+                                }
+                            }
+
+                            response.context_menu(|ui| {
+                                if ui.button("📁 Nouveau dossier").clicked() {
+                                    create_default_folder(path, app);
+                                    ui.close();
+                                }
+                                if ui.button("📄 Nouveau fichier").clicked() {
+                                    create_default_file(path, app);
+                                    ui.close();
+                                }
+                                if ui.button("✏ Renommer").clicked() {
+                                    app.state.file_tree.renaming = Some(path.clone());
+                                    app.state.file_tree.rename_buf = name.clone();
+                                    ui.close();
+                                }
+                                if ui.button("🗑 Supprimer").clicked() {
+                                    std::fs::remove_dir_all(path).ok();
+                                    ui.close();
+                                }
+                            });
+                        });
+                    });
+
+                    // Les enfants sont EN DEHORS du handle — ils ont leur propre dnd
+                    if is_open {
+                        ui.indent(path, |ui| {
+                            show_tree(ui, path, app);
+                        });
+                    }
                 }
-
-                // Menu clic droit sur le fichier
-                response.context_menu(|ui| {
-                    if ui.button("✏ Renommer").clicked() {
-                        app.state.file_tree.renaming = Some(path.clone());
-                        app.state.file_tree.rename_buf = name.clone();
-                        ui.close();
-                    }
-                    if ui.button("🗑 Supprimer").clicked() {
-                        std::fs::remove_file(&path).ok();
-                        ui.close();
-                    }
-                });
             }
-        }
+        },
+    );
+
+    if response.is_drag_finished() {
+        save_order(&dir, &items);
+    }
+
+    if let Some(dropped) = response.final_update() {
+        // TODO : drop cross-dossier
+        
     }
 }
+
 
 fn create_default_folder(parent: &std::path::Path, app: &mut App) {
     let name = "Nouveau dossier";
@@ -387,13 +448,4 @@ fn create_default_file(parent: &std::path::Path, app: &mut App) {
     // Active le renommage immédiatement
     app.state.file_tree.renaming = Some(path);
     app.state.file_tree.rename_buf = name.to_string();
-}
-
-fn sorted_entries(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
-    std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .collect()
 }

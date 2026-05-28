@@ -9,13 +9,11 @@ rust-version = "1.92"
 
 
 [dependencies]
-# wgpu = "24"
 egui-wgpu = "0.34.1"
-# egui = "0.34.1"
+egui_dnd = "0.15.0"
 bytemuck = { version = "1", features = ["derive"] }
 eframe = { version = "0.34.1", features = ["persistence"] }
 log = "0.4.27"
-egui_dnd = "0.13"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 
 dirs = "5"

@@ -88,10 +88,10 @@ impl StyletManager {
                 let draw_pos = (pos - gpu_rect.min)/state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
                 let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
                 if tool_type==TabletToolType::Pen{
-                    file.current_stroke.push(stroke_point);
+                    file.add_stroke_point(stroke_point);
                     
                 }else if tool_type == TabletToolType::Eraser {
-                    erase_at(&mut file.strokes, draw_pos.to_pos2(), 1f32);
+                    file.erase_at(draw_pos.to_pos2(), 1f32);
                 }else{
                     println!("Tool type not defined");
                 }
@@ -126,9 +126,7 @@ impl StyletManager {
         }else{
             state.cursor_icon = egui::CursorIcon::Default;
             if let Some(file) = &mut state.current_file{
-                let points = std::mem::take(&mut file.current_stroke);
-                let pen_stroke = PenStroke::new(Color32::RED, points, 1f32);
-                file.strokes.push(pen_stroke);
+                file.save_current_stroke();
             }
         }
     }
@@ -260,42 +258,4 @@ impl ButtonEventState {
             tool_type,
         }
     }
-}
-pub fn erase_at(strokes: &mut Vec<PenStroke>, pos: egui::Pos2, radius: f32) {
-    let eraser_rect = egui::Rect::from_center_size(
-        pos,
-        egui::vec2(radius * 2.0, radius * 2.0),
-    );
-
-    for stroke in strokes {
-        if stroke.deleted { continue; }
-
-        // Test bbox d'abord — très rapide
-        if !stroke.bbox.intersects(eraser_rect) { continue; }
-
-        // Test précis seulement si bbox intersecte
-        if stroke_intersects_point(stroke, pos, radius) {
-            stroke.deleted = true;
-            // println!("Deleted one");
-        }
-    }
-}
-
-fn stroke_intersects_point(stroke: &PenStroke, pos: egui::Pos2, radius: f32) -> bool {
-    for window in stroke.points.windows(2) {
-        let a = window[0].pos;
-        let b = window[1].pos;
-        if distance_point_to_segment(pos, a, b) < radius {
-            return true;
-        }
-    }
-    false
-}
-
-fn distance_point_to_segment(p: egui::Pos2, a: egui::Pos2, b: egui::Pos2) -> f32 {
-    let ab = b - a;
-    let ap = p - a;
-    let t  = (ap.dot(ab) / ab.dot(ab)).clamp(0.0, 1.0);
-    let closest = a + ab * t;
-    (p - closest).length()
 }

@@ -8,3 +8,4 @@ pub const PROJECT_DEFAULT_FOLDER: &str = "fastnote/persistent/projects/";
 //relative path for project
 pub const MAIN_DATA : &str = "main_data.json";
 pub const NOTEBOOK : &str = "notebook";
+pub const TREE_ORDER_FILE: &str = ".fastnote_order";
