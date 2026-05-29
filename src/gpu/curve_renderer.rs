@@ -1,7 +1,8 @@
 use bytemuck::{Pod, Zeroable};
-use eframe::egui::{self, Vec2};
+use eframe::egui::{self, Color32, Vec2};
 use eframe::wgpu::util::DeviceExt;
 use egui_wgpu::wgpu;
+use crate::color_to_rgb;
 use crate::strokes::{PenStroke, StrokePoint};
 use crate::gpuview::GpuView;
 
@@ -22,10 +23,10 @@ pub struct GpuPoint {
     pos:      [f32; 2],
     pressure: f32,
     color:    u32,
-    is_last:  u32,
-    _pad:     u32,
-    _pad2:    u32,
-    _pad3:    u32,
+    is_last:  u32,//we can share it with r:u8, g:u8, b:u8, a:u8
+    _pad1: u32,
+    _pad2: u32,
+    _pad3: u32,
 }
 
 #[repr(C)]
@@ -241,6 +242,7 @@ impl CurveRenderer {
 
 pub struct CurveCallback {
     pub current_stroke: Vec<StrokePoint>,
+    pub color: Color32,
     pub strokes:        Vec<PenStroke>,
     pub canvas_size:    Vec2,
     pub gpu_view:       GpuView,
@@ -289,21 +291,26 @@ impl egui_wgpu::CallbackTrait for CurveCallback {
                 all_points.push(GpuPoint {
                     pos:      [p.pos.x, p.pos.y],
                     pressure: p.pressure as f32,
-                    color:    1,
+                    color:    color_to_rgb(&stroke.color),
                     is_last,
-                    _pad: 0, _pad2: 0, _pad3: 0,
+                    _pad1 : 0,
+                    _pad2 : 0,
+                    _pad3 : 0,
+                    
                 });
             }
         }
-
         for (i, p) in self.current_stroke.iter().enumerate() {
             let is_last = (i == self.current_stroke.len() - 1) as u32;
             all_points.push(GpuPoint {
                 pos:      [p.pos.x, p.pos.y],
                 pressure: p.pressure as f32,
-                color:    0,
                 is_last,
-                _pad: 0, _pad2: 0, _pad3: 0,
+                color:    color_to_rgb(&self.color),
+                _pad1 : 0,
+                _pad2 : 0,
+                _pad3 : 0,
+                    
             });
         }
 

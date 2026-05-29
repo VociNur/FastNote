@@ -65,6 +65,7 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
                 rect,
                 CurveCallback {
                     current_stroke,
+                    color: app.state.color_palette.pen.color,
                     strokes,
                     canvas_size: rect.size(),
                     gpu_view: app.state.gpu_view.clone(),

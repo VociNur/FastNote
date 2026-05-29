@@ -46,6 +46,7 @@ impl OpenedProjectsManager {
     }
     pub fn unload_user_project_from_path(self: &mut Self, path: PathBuf){
         self.projects.retain(|f| f.path.canonicalize().is_ok() && path.canonicalize().is_ok() && f.path.canonicalize().unwrap() != path.canonicalize().unwrap());
+        self.save_opened_project_manager();
     }
 
     pub fn load_opened_project_manager(&mut self) -> anyhow::Result<()> {

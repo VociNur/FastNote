@@ -11,9 +11,9 @@ struct GpuPoint {
     pressure: f32,
     color:    u32,
     is_last:  u32,
-    _pad:     u32,
-    _pad2:    u32,
-    _pad3:    u32,
+    _pad1: u32,
+    _pad2: u32,
+    _pad3: u32,
 }
 
 struct Vertex {
@@ -27,11 +27,19 @@ struct Vertex {
 @group(0) @binding(1) var<storage, read>       points   : array<GpuPoint>;
 @group(0) @binding(2) var<storage, read_write> vertices : array<Vertex>;
 
-fn color_from_id(id: u32) -> vec4<f32> {
-    if id == 1u { return vec4<f32>(1.0, 0.0, 0.0, 1.0); }
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+// fn color_from_id(id: u32) -> vec4<f32> {
+//     if id == 1u { return vec4<f32>(1.0, 0.0, 0.0, 1.0); }
+//     return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+// }
+//
+fn rgba_u32_to_vec4(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color >> 24) & 0xFF),
+        f32((color >> 16) & 0xFF),
+        f32((color >>  8) & 0xFF),
+        f32( color        & 0xFF)
+    ) / 255.0;
 }
-
 // Catmull-Rom : interpole entre p1 et p2 avec p0 et p3 comme voisins
 fn catmull_rom(p0: vec2<f32>, p1: vec2<f32>, p2: vec2<f32>, p3: vec2<f32>, t: f32) -> vec2<f32> {
     let t2 = t * t;
@@ -172,7 +180,7 @@ fn cs_main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let press_a = lerp(pr1, pr2, t0);
     let press_b = lerp(pr1, pr2, t1);
 
-    let color = color_from_id(a.color);
+    let color = rgba_u32_to_vec4(a.color);
     let base  = thread_idx * 6u;
 
     emit_segment(base, pos_a, pos_b, press_a, press_b, color);

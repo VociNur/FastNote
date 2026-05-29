@@ -2,26 +2,26 @@
 
 use std::path::PathBuf;
 
-use eframe::egui;
+use eframe::egui::{self, Color32};
 
 // use egui::Color32;
 pub mod app;
-pub mod state;
-pub mod themes;
-pub mod ui;
+pub mod color_palette;
+pub mod edition;
+pub mod file_tree_state;
+pub mod gpu;
+pub mod gpuview;
 pub mod icons;
+pub mod input_manager;
+pub mod paths;
 pub mod pen;
 pub mod projects;
-pub mod edition;
-pub mod stylet;
-pub mod gpu;
+pub mod state;
 pub mod strokes;
-pub mod input_manager;
-pub mod gpuview;
-pub mod paths;
-pub mod file_tree_state;
+pub mod stylet;
+pub mod themes;
 pub mod tree_order;
-pub mod color_palette;
+pub mod ui;
 
 // pub fn str_hex_to_color(hex: &str)->Color32{
 //     let hx = hex.trim_start_matches("#");
@@ -34,17 +34,20 @@ fn get_screen_size() -> (u32, u32) {
     let Ok(output) = std::process::Command::new("xrandr").output() else {
         return (1920, 1200);
     };
-    
+
     let text = String::from_utf8_lossy(&output.stdout);
     for line in text.lines() {
         if line.contains(" connected primary") {
-            if let Some(res) = line.split_whitespace()
+            if let Some(res) = line
+                .split_whitespace()
                 .find(|s| s.contains('x') && s.contains('+'))
             {
                 let parts: Vec<&str> = res.split('x').collect();
                 if parts.len() >= 2 {
                     let w = parts[0].parse().unwrap_or(1920);
-                    let h = parts[1].split('+').next()
+                    let h = parts[1]
+                        .split('+')
+                        .next()
                         .and_then(|s| s.parse().ok())
                         .unwrap_or(1200);
                     return (w, h);
@@ -54,13 +57,11 @@ fn get_screen_size() -> (u32, u32) {
     }
     println!("Error !");
     assert!(false);
-    (1,1)
+    (1, 1)
 }
 
-fn get_working_path() -> std::path::PathBuf{
-    dirs::data_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-    
+fn get_working_path() -> std::path::PathBuf {
+    dirs::data_dir().unwrap_or_else(|| std::path::PathBuf::from("."))
 }
 
 // fn get_path_with_name(name: String) -> std::path::PathBuf {
@@ -75,72 +76,68 @@ fn get_working_path() -> std::path::PathBuf{
 //     path
 // }
 
-
 // fn save_persistent_data_file(filename: &str, json: &str) -> anyhow::Result<()> {
 //         let path = get_path_with_name(filename.to_owned());
-    
+
 //         let tmp_path = path.with_extension("tmp");
 
 //          if let Some(parent) = path.parent() {
 //             std::fs::create_dir_all(parent)?;
 //         }
 //         std::fs::write(&tmp_path, json)?;
-    
+
 //         // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
 //         std::fs::rename(&tmp_path, path)?;
-        
+
 //         Ok(())
 // }
 
-fn aux_save_persistent_data(path:PathBuf, json: &str) -> anyhow::Result<()>{
-    
-        let tmp_path = path.with_extension("tmp");
+fn aux_save_persistent_data(path: PathBuf, json: &str) -> anyhow::Result<()> {
+    let tmp_path = path.with_extension("tmp");
 
-         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(&tmp_path, json)?;
-    
-        // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
-        std::fs::rename(&tmp_path, path)?;
-        
-        Ok(())
-    
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(&tmp_path, json)?;
+
+    // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
+    std::fs::rename(&tmp_path, path)?;
+
+    Ok(())
 }
 
-fn save_persistent_data(path: PathBuf, json: &str){
-    if aux_save_persistent_data(path.clone(), json).is_err(){
+fn save_persistent_data(path: PathBuf, json: &str) {
+    if aux_save_persistent_data(path.clone(), json).is_err() {
         println!("Could not save file: {path:?}");
     }
 }
 
-fn has_persisent_data(path: PathBuf)->bool{
-    
-        // let path = get_path_with_name(filename.to_owned());
-        path.exists()
+fn has_persisent_data(path: PathBuf) -> bool {
+    // let path = get_path_with_name(filename.to_owned());
+    path.exists()
 }
 
-
-
 fn load_persistent_data(path: PathBuf) -> anyhow::Result<String> {
-        // let path = get_path_with_name(filename.to_owned());
-    
-        
-        if path.exists() {
-            let json = std::fs::read_to_string(path).unwrap_or_default();
-            Ok(json)
-        } else {
-           // State::default()
-           println!("Opening data that doesn't exist");
-           println!("File {:?}", path);
-           Err(anyhow::anyhow!("File not found"))
-        }
+    // let path = get_path_with_name(filename.to_owned());
 
+    if path.exists() {
+        let json = std::fs::read_to_string(path).unwrap_or_default();
+        Ok(json)
+    } else {
+        // State::default()
+        println!("Opening data that doesn't exist");
+        println!("File {:?}", path);
+        Err(anyhow::anyhow!("File not found"))
+    }
 }
 fn distance_point_to_segment(p: egui::Pos2, a: egui::Pos2, b: egui::Pos2) -> f32 {
     let ab = b - a;
     let ap = p - a;
-    let t  = (ap.dot(ab) / ab.dot(ab)).clamp(0.0, 1.0);
+    let t = (ap.dot(ab) / ab.dot(ab)).clamp(0.0, 1.0);
     let closest = a + ab * t;
     (p - closest).length()
+}
+
+fn color_to_rgb(color: &Color32) -> u32 {
+    ((color.r() as u32) << 24) + ((color.g() as u32) << 16) + ((color.b() as u32) << 8) + 255
 }
