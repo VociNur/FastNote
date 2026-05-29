@@ -3,7 +3,8 @@ struct Uniforms {
     view_offset:  vec2<f32>,
     zoom:        f32,
     subdivisions: u32,  // nombre de subdivisions par segment selon le zoom
-    _pad:        vec2<f32>,
+    vertex_offset: u32,//not used here
+    _pad:        f32,
 }
 
 struct GpuPoint {
@@ -181,7 +182,6 @@ fn cs_main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let press_b = lerp(pr1, pr2, t1);
 
     let color = rgba_u32_to_vec4(a.color);
-    let base  = thread_idx * 6u;
-
+    let base = (uniforms.vertex_offset + thread_idx) * 6u;  
     emit_segment(base, pos_a, pos_b, press_a, press_b, color);
 }

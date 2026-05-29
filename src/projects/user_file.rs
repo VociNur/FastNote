@@ -13,12 +13,20 @@ pub struct UserFile{
     pub path: PathBuf,
     current_stroke: Vec<StrokePoint>,
     strokes: Vec<PenStroke>,
+
+    #[serde(skip)]
+    pub strokes_dirty: bool
     
 }
 
 impl UserFile{
+    pub fn print_nbr_points(&self){
+        println!("Current: {}", self.current_stroke.len());
+        let t = self.strokes.iter().map(|s| s.nbr_point());
+        println!("Current: {}", t.sum::<usize>());
+    }
     pub fn new_blank_file(path: PathBuf) -> Self{
-        UserFile{path, current_stroke: vec![], strokes: vec![]}
+        UserFile{path, current_stroke: vec![], strokes: vec![], strokes_dirty: false}
     }
 
     pub fn from_path(path: PathBuf) -> anyhow::Result<Self> {
@@ -48,11 +56,13 @@ impl UserFile{
         if err.is_err(){
             println!("Errorr when adding a stroke");
         }
+            //TODO stroke dirt y?t
     }
     pub fn save_current_stroke(&mut self, pen: &Pen){
         let points = std::mem::take(&mut self.current_stroke);
         let pen_stroke = PenStroke::new(pen.color, points, pen.size);
         self.add_stroke(pen_stroke);
+        self.strokes_dirty = true;//TODO: a mettre dans add_stroke plutôt ?
     }
     pub fn erase_at(&mut self, pos: egui::Pos2, radius: f32) {
 
@@ -78,11 +88,11 @@ impl UserFile{
             println!("Errorr when erasing a stroke");
         }
     }
-    pub fn get_cloned_strokes(&self)->Vec<PenStroke>{
-        self.strokes.clone()
+    pub fn get_strokes(&self)->&Vec<PenStroke>{
+        &self.strokes
     }
-    pub fn get_cloned_current_stroke(&self)->Vec<StrokePoint>{
-        self.current_stroke.clone()
+    pub fn get_current_stroke(&self)->&Vec<StrokePoint>{
+        &self.current_stroke
     }
     
 }

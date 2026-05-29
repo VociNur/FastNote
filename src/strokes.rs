@@ -56,6 +56,9 @@ impl PenStroke{
         
         PenStroke{color, points, width, bbox, deleted: false}
     }
+    pub fn nbr_point(&self)->usize{
+        self.points.len()
+    }
 }
 
 impl PenStroke{

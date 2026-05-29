@@ -28,13 +28,6 @@ fn main() -> eframe::Result {
 
             // Initialise le renderer GPU
             let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
-            // let renderer = TriangleRenderer::new(&wgpu_state.device, wgpu_state.target_format);
-            // wgpu_state
-            //     .renderer
-            //     .write()
-            //     .callback_resources
-            //     .insert(renderer);
-            //
             let renderer = CurveRenderer::new(&wgpu_state.device, wgpu_state.target_format);
             wgpu_state
                 .renderer

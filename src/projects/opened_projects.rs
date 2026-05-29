@@ -40,6 +40,7 @@ impl OpenedProjectsManager {
         let json = load_persistent_data(path_main)?;
         let mut cast: UserProject = serde_json::from_str(&json)?;
         cast.path = path;
+
         self.projects.push(cast);
         self.save_opened_project_manager();
         Ok(())
