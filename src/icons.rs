@@ -17,7 +17,6 @@ pub struct Icons {
     pub eraser: egui::TextureHandle,
     pub notebook: egui::TextureHandle,
     //Left
-    
     pub bold_right_arrow: egui::TextureHandle,
     pub down_arrow: egui::TextureHandle,
     pub bold_down_arrow: egui::TextureHandle,
@@ -43,12 +42,10 @@ impl Icons {
             plus: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/plus.png"),
-                
             ),
             cross_folder: load(
                 ctx,
                 &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/menu/file/cross.png"),
-                
             ),
             notebook: load(
                 ctx,
@@ -108,9 +105,9 @@ pub fn load(ctx: &egui::Context, path: &Path) -> TextureHandle {
     )); //, path::absolute(path)
     let img = ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
-        .unwrap()
+        .expect(&format!("expect img 1 {}", path.to_string_lossy()))
         .decode()
-        .unwrap(); // -> DynamicImage
+        .expect(&format!("expect img 2 {}", path.to_string_lossy())); // -> DynamicImage
 
     let rgba = img.to_rgba8();
     let size = [rgba.width() as usize, rgba.height() as usize];
