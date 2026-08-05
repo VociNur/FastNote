@@ -134,10 +134,10 @@ impl eframe::App for App {
         }
     }
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame){
-         let has_focus = ctx.input(|i| i.focused);
-         self.app_have_focus = has_focus;
+        let has_focus = ctx.input(|i| i.focused);
+        self.app_have_focus = has_focus;
 
-         self.stylet_manager.manage_events(&mut self.state, &has_focus, &self.gpu_rect);
+        self.stylet_manager.manage_events(&mut self.state, &has_focus, &self.gpu_rect);
          // println!("has focus{}", has_focus);
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl){
             println!("Save state");

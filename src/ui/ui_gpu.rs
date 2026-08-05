@@ -1,11 +1,8 @@
-use eframe::egui;
+use eframe::egui::{self, Color32};
 
 use crate::{app::App, gpu::curve_renderer::CurveCallback};
 
-
-
-pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
-    
+pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
     if app.state.current_file.is_some() {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
@@ -14,7 +11,6 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
             // let adj_rect = Rect {min: rect.min, max: Pos2 {x: rect.max.x, y: 1080f32}};
             // println!("Rect : {}", adj_rect);
 
-
             let points = app
                 .state
                 .current_file
@@ -22,10 +18,12 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
                 .map(|f| f.get_cloned_current_stroke())
                 .unwrap_or_default();
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
-            let current_stroke = app.state.current_file
-            .as_ref()
-            .map(|f| f.get_cloned_current_stroke())
-            .unwrap_or_default();
+            let current_stroke = app
+                .state
+                .current_file
+                .as_ref()
+                .map(|f| f.get_cloned_current_stroke())
+                .unwrap_or_default();
 
             if let Some(last) = current_stroke.last() {
                 // println!("{:?}", current_stroke);
@@ -51,16 +49,26 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App){
             let margin_x = rect.min.x + 80.0 * zoom - offset.x * zoom;
             if margin_x > rect.min.x && margin_x < rect.max.x {
                 painter.line_segment(
-                    [egui::pos2(margin_x, rect.min.y), egui::pos2(margin_x, rect.max.y)],
+                    [
+                        egui::pos2(margin_x, rect.min.y),
+                        egui::pos2(margin_x, rect.max.y),
+                    ],
                     egui::Stroke::new(1.5, egui::Color32::from_rgb(255, 100, 100)),
                 );
             }
 
-            let strokes = app.state.current_file
+            let strokes = app
+                .state
+                .current_file
                 .as_ref()
                 .map(|f| f.get_cloned_strokes())
                 .unwrap_or_default();
 
+            for stroke in &strokes {
+                for point in &stroke.points {
+                    painter.circle_filled(point.pos, 2., Color32::RED);
+                }
+            }
             ui.painter().add(egui_wgpu::Callback::new_paint_callback(
                 rect,
                 CurveCallback {
