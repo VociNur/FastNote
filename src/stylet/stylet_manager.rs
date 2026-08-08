@@ -96,7 +96,7 @@ impl StyletManager {
                 }
             }
         } else {
-            println!("Outside the gpu rect");
+            println!("Outside the gpu rect {:?} {:?}",gpu_rect, pos);
         }
     }
 

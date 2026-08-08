@@ -525,7 +525,7 @@ impl egui_wgpu::CallbackTrait for MainCallback {
 
     fn paint(
         &self,
-        info: egui::PaintCallbackInfo,
+        _info: egui::PaintCallbackInfo,
         pass: &mut wgpu::RenderPass<'static>,
         resources: &egui_wgpu::CallbackResources,
     ) {

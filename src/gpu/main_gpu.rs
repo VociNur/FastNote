@@ -54,14 +54,6 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             _pad3: 0,
         });
     }
-    if let Some(gpu_rect) = app.gpu_rect {
-        ui.painter().rect_stroke(
-            gpu_rect,
-            egui::CornerRadius::ZERO,
-            egui::Stroke::new(2.0_f32, egui::Color32::GREEN),
-            egui::StrokeKind::Outside,
-        );
-    }
 
     ui.painter().add(egui_wgpu::Callback::new_paint_callback(
         rect,
