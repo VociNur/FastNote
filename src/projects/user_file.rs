@@ -11,8 +11,8 @@ use crate::{load_persistent_data, pen::Pen, save_persistent_data, strokes::{PenS
 pub struct UserFile{
     
     pub path: PathBuf,
-    current_stroke: Vec<StrokePoint>,
-    strokes: Vec<PenStroke>,
+    pub current_stroke: Vec<StrokePoint>,
+    pub strokes: Vec<PenStroke>,
     
 }
 

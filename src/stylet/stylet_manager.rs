@@ -6,9 +6,7 @@ use input::event::{
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
-use crate::{
-    state::State, strokes::StrokePoint, stylet::stylet::StyletState 
-};
+use crate::{state::State, strokes::StrokePoint, stylet::stylet::StyletState};
 
 #[derive(Default)]
 pub struct StyletManager {
@@ -74,6 +72,7 @@ impl StyletManager {
         if !self.stylet.pressed {
             return;
         }
+        println!("test");
         // if state.current_file.is_none() {
         //     state.current_file = Some(UserFile::new(PathBuf::from("")));
         // }
@@ -84,15 +83,15 @@ impl StyletManager {
         let gpu_rect = opt_gpu_rect.unwrap();
         if gpu_rect.contains(pos) {
             if let Some(file) = state.current_file.as_mut() {
-
-                let draw_pos = (pos - gpu_rect.min)/state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
+                let draw_pos =
+                    (pos - gpu_rect.min) / state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
                 let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
-                if tool_type==TabletToolType::Pen{
+                if tool_type == TabletToolType::Pen {
                     file.add_stroke_point(stroke_point);
-                    
-                }else if tool_type == TabletToolType::Eraser {
+                    //println!("Add stroke point");
+                } else if tool_type == TabletToolType::Eraser {
                     file.erase_at(draw_pos.to_pos2(), 1f32);
-                }else{
+                } else {
                     println!("Tool type not defined");
                 }
             }
@@ -101,7 +100,6 @@ impl StyletManager {
         }
     }
 
-    
     pub fn on_axis_event(
         self: &mut Self,
         state: &mut State,
@@ -109,7 +107,13 @@ impl StyletManager {
         opt_gpu_rect: &Option<Rect>,
     ) {
         // println!("axis: {axis_event_state:?}");
-        self.touch_gpu(state, axis_event_state.pos, axis_event_state.pressure, axis_event_state.tool_type, opt_gpu_rect);
+        self.touch_gpu(
+            state,
+            axis_event_state.pos,
+            axis_event_state.pressure,
+            axis_event_state.tool_type,
+            opt_gpu_rect,
+        );
     }
 
     pub fn on_tip_event(
@@ -118,14 +122,20 @@ impl StyletManager {
         tip_event_state: &TipEventState,
         opt_gpu_rect: &Option<Rect>,
     ) {
-        // println!("tip: {tip_event_state:?}");
+        println!("tip: {tip_event_state:?}");
         //
-        if tip_event_state.tip_state == TipState::Down{
+        if tip_event_state.tip_state == TipState::Down {
             state.cursor_icon = egui::CursorIcon::None;
-            self.touch_gpu(state, tip_event_state.pos, tip_event_state.pressure,  tip_event_state.tool_type, opt_gpu_rect);
-        }else{
+            self.touch_gpu(
+                state,
+                tip_event_state.pos,
+                tip_event_state.pressure,
+                tip_event_state.tool_type,
+                opt_gpu_rect,
+            );
+        } else {
             state.cursor_icon = egui::CursorIcon::Default;
-            if let Some(file) = &mut state.current_file{
+            if let Some(file) = &mut state.current_file {
                 file.save_current_stroke(&state.color_palette.pen);
             }
         }

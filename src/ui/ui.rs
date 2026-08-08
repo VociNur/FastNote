@@ -1,5 +1,5 @@
 use crate::{
-    app::App, gpu::curve_renderer::CurveCallback, state::MenuMode, ui::{middle::{draw_file_menu_middle, draw_left}, top_bar::draw_top_bar, ui_gpu::draw_ui_gpu}
+    app::App, state::MenuMode, ui::{middle::{draw_file_menu_middle, draw_left}, top_bar::draw_top_bar, ui_gpu::draw_ui_gpu}
 };
 use eframe::egui::{self};
 

@@ -1,35 +1,16 @@
 use eframe::egui::{self, Color32};
 
-use crate::{app::App, gpu::curve_renderer::CurveCallback};
+use crate::{app::App, gpu::{main_gpu::draw_gpu}};
 
 pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
     if app.state.current_file.is_some() {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
             app.gpu_rect = Some(rect.clone());
-            // println!("Rect : {}", rect);
-            // let adj_rect = Rect {min: rect.min, max: Pos2 {x: rect.max.x, y: 1080f32}};
-            // println!("Rect : {}", adj_rect);
 
-            let points = app
-                .state
-                .current_file
-                .as_ref()
-                .map(|f| f.get_cloned_current_stroke())
-                .unwrap_or_default();
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
-            let current_stroke = app
-                .state
-                .current_file
-                .as_ref()
-                .map(|f| f.get_cloned_current_stroke())
-                .unwrap_or_default();
-
-            if let Some(last) = current_stroke.last() {
-                // println!("{:?}", current_stroke);
-                // println!("dernier point: {:?}", last.pos);
-            }
             let painter = ui.painter();
+
             let zoom = app.state.gpu_view.zoom;
             let offset = app.state.gpu_view.top_left; // le décalage actuel
 
@@ -40,7 +21,7 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
             while y < rect.max.y {
                 painter.line_segment(
                     [egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)],
-                    egui::Stroke::new(1.0, egui::Color32::from_rgb(200, 210, 255)),
+                    egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(200, 210, 255)),
                 );
                 y += line_spacing;
             }
@@ -53,32 +34,11 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
                         egui::pos2(margin_x, rect.min.y),
                         egui::pos2(margin_x, rect.max.y),
                     ],
-                    egui::Stroke::new(1.5, egui::Color32::from_rgb(255, 100, 100)),
+                    egui::Stroke::new(1.5_f32, egui::Color32::from_rgb(255, 100, 100)),
                 );
             }
 
-            let strokes = app
-                .state
-                .current_file
-                .as_ref()
-                .map(|f| f.get_cloned_strokes())
-                .unwrap_or_default();
-
-            for stroke in &strokes {
-                for point in &stroke.points {
-                    painter.circle_filled(point.pos, 2., Color32::RED);
-                }
-            }
-            ui.painter().add(egui_wgpu::Callback::new_paint_callback(
-                rect,
-                CurveCallback {
-                    current_stroke,
-                    color: app.state.color_palette.pen.color,
-                    strokes,
-                    canvas_size: rect.size(),
-                    gpu_view: app.state.gpu_view.clone(),
-                },
-            ));
+            draw_gpu(ui, app, rect);
             // -------------- DEBUG -----------
 
             // let strokes = app.state.current_file
