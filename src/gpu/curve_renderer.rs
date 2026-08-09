@@ -45,7 +45,7 @@
 //         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
 //             label: Some("curve uniforms"),
 //             contents: bytemuck::bytes_of(&Uniforms {
-//                 canvas_size: [1920.0, 1200.0],
+//                 canvas_size: [],
 //                 view_offset: [0.0, 0.0],
 //                 zoom: 1.0,
 //                 subdivisions: 1,

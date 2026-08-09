@@ -55,7 +55,7 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
     let center = p.pos;
 
     // Taille du carré (debug)
-    let s = 4.0;
+    let s = 1.0;
 
     // 4 coins du carré
     let p0 = center + vec2<f32>(-s, -s);

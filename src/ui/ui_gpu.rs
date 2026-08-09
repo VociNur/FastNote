@@ -1,12 +1,16 @@
 use eframe::egui::{self, Color32};
 
-use crate::{app::App, gpu::{main_gpu::draw_gpu}};
+use crate::{app::App, gpu::main_gpu::draw_gpu};
+fn rect_points_to_pixels(rect_points: egui::Rect, ppp: f32) -> egui::Rect {
+    egui::Rect::from_min_max(rect_points.min * ppp, rect_points.max * ppp)
+}
 
 pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
     if app.state.current_file.is_some() {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
-            app.gpu_rect = Some(rect.clone());
+            let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
+            app.gpu_rect = Some(pixel_rect);
 
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
             let painter = ui.painter();
@@ -15,19 +19,19 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
             let offset = app.state.gpu_view.top_left; // le décalage actuel
 
             // Lignes horizontales tous les 50 pixels (dans l'espace canvas)
-            let line_spacing = 50.0 * zoom;
-            let start_y = rect.min.y - (offset.y * zoom) % line_spacing;
+            let line_spacing = 50.0 * zoom / ui.pixels_per_point();
+            let start_y = rect.min.y - (offset.y * zoom / ui.pixels_per_point()) % line_spacing;
             let mut y = start_y;
             while y < rect.max.y {
                 painter.line_segment(
                     [egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)],
                     egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(200, 210, 255)),
                 );
-                y += line_spacing;
+                y += line_spacing / ui.pixels_per_point();
             }
 
             // Marge verticale rouge
-            let margin_x = rect.min.x + 80.0 * zoom - offset.x * zoom;
+            let margin_x = rect.min.x + 80.0 * zoom - offset.x * zoom / ui.pixels_per_point();
             if margin_x > rect.min.x && margin_x < rect.max.x {
                 painter.line_segment(
                     [

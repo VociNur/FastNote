@@ -1,11 +1,17 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
 use eframe::egui::{self, Rect};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
-use crate::{edition::open_edition_mode, input_manager::InputManager, state::State, projects::user_file::UserFile};
-use crate::ui::ui::draw_gui;
-use crate::stylet::stylet_inputs::spawn_pen_thread;
 use crate::icons::Icons;
+use crate::stylet::stylet_inputs::spawn_pen_thread;
 use crate::stylet::stylet_manager::StyletManager;
+use crate::ui::ui::draw_gui;
+use crate::{
+    edition::open_edition_mode, input_manager::InputManager, projects::user_file::UserFile,
+    state::State,
+};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
@@ -15,9 +21,12 @@ pub struct App {
     pub input_manager: InputManager,
     pub stylet_manager: StyletManager,
     pub gpu_rect: Option<Rect>,
+    pub x_screen_size: u32,
+    pub y_screen_size: u32,
     pub window_state: Arc<Mutex<WindowState>>,
     // pub last_pen_state: Option<PenState>,
     //
+    pub ppp: f32,
 }
 
 #[derive(Default, Clone)]
@@ -30,7 +39,7 @@ pub struct PenState {
 #[derive(Default, Clone)]
 pub struct WindowState {
     pub pos: egui::Pos2,
-    pub ppp: f32,  // pixels_per_point
+    // pub ppp: f32, // pixels_per_point
 }
 impl App {
     fn default(icons: Icons) -> Self {
@@ -42,24 +51,32 @@ impl App {
             window_state: Arc::new(Mutex::new(WindowState::default())),
             stylet_manager: StyletManager::default(),
             input_manager: InputManager::default(),
+            x_screen_size: 1,
+            y_screen_size: 1,
             // last_pen_state: None,
             // clicks: vec![],
-            
-            
+            ppp: 1.,
         }
     }
     // Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>, icons:Icons) -> Self {
-        let app = App::default(icons);
+    pub fn new(cc: &eframe::CreationContext<'_>, icons: Icons, width: u32, height: u32) -> Self {
+        let mut app = App::default(icons);
         let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
         println!("msaa samples: {:?}", wgpu_state.target_format);
-        spawn_pen_thread(Arc::clone(&app.window_state), Arc::clone(&app.stylet_manager.events));
+        app.x_screen_size = width;
+        app.y_screen_size = height;
+        spawn_pen_thread(
+            Arc::clone(&app.window_state),
+            Arc::clone(&app.stylet_manager.events),
+            width,
+            height,
+        );
         app
     }
 
-    pub fn user_opened_project(&mut self, path: PathBuf){
+    pub fn user_opened_project(&mut self, path: PathBuf) {
         // self.state.opened_projects.push(UserProject::new(path.file_stem().and_then(|s| s.to_str()).unwrap_or("Unnamed").to_owned(), path.clone(), Color32::BLACK));
-        
+
         // println!("Opened {:?}", path);
         // let result = self.save_opened_projects();
         // if result.is_err(){
@@ -67,50 +84,52 @@ impl App {
         // }
         println!("Opened");
         println!("path: {:?}", path);
-        let res = self.state.opened_projects.load_user_project_from_path(path.clone());
-        if res.is_err(){
+        let res = self
+            .state
+            .opened_projects
+            .load_user_project_from_path(path.clone());
+        if res.is_err() {
             println!("Not able to load path ! {:?}", path);
         }
-        
     }
 
-    pub fn user_created_project(&mut self){
+    pub fn user_created_project(&mut self) {
         let dialog = &self.state.new_project_dialog;
         println!("Created");
-        println!("name: {}", dialog.name);    
-        println!("color: {:?}", dialog.color);    
+        println!("name: {}", dialog.name);
+        println!("color: {:?}", dialog.color);
         println!("path: {:?}", dialog.path);
-        self.state.opened_projects.create_blank_project(dialog.path.clone().join(dialog.name.clone()), dialog.name.clone(), dialog.color);
+        self.state.opened_projects.create_blank_project(
+            dialog.path.clone().join(dialog.name.clone()),
+            dialog.name.clone(),
+            dialog.color,
+        );
     }
 
-    pub fn save_state(&mut self) -> anyhow::Result<()>{
-
+    pub fn save_state(&mut self) -> anyhow::Result<()> {
         // let path = save_path();
         // let json = serde_json::to_string_pretty(&self.state)?;
         // let tmp_path = path.with_extension("tmp");
         // std::fs::write(&tmp_path, json)?;
-    
+
         // // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
         // std::fs::rename(&tmp_path, path)?;
-        
+
         // Ok(())
         println!("entire save of state deactivated");
         Ok(())
     }
 
-    
-    
-    pub fn open_file(&mut self, file_path: PathBuf){
+    pub fn open_file(&mut self, file_path: PathBuf) {
         // println!("file path: {:?}", file_path);
         // let json = std::fs::read_to_string(&file_path).unwrap_or_default();
         // let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default()
         let user_file = UserFile::from_path(file_path.clone());
-        if user_file.is_err(){
+        if user_file.is_err() {
             println!("Could not load file {:?}", file_path);
         }
         self.state.current_file = Some(user_file.unwrap());
     }
-    
 }
 
 impl eframe::App for App {
@@ -126,32 +145,41 @@ impl eframe::App for App {
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);
-        ctx.set_visuals(visuals);        
+        ctx.set_visuals(visuals);
 
-        draw_gui(ui,self);
+        draw_gui(ui, self);
         if self.state.edition_open {
-            open_edition_mode(&mut self.state.theme, ui.ctx(), &mut self.state.edition_open);
+            open_edition_mode(
+                &mut self.state.theme,
+                ui.ctx(),
+                &mut self.state.edition_open,
+            );
         }
+        self.ppp = ui.pixels_per_point();
     }
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame){
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
         self.app_have_focus = has_focus;
 
-        self.stylet_manager.manage_events(&mut self.state, &has_focus, &self.gpu_rect);
-         // println!("has focus{}", has_focus);
-        if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl){
+        self.stylet_manager
+            .manage_events(&mut self.state, &has_focus, &self.gpu_rect);
+        // println!("has focus{}", has_focus);
+        if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
             println!("Save state");
         }
-        if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl){
+        if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
             println!("Load state");
         }
-        if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl){
-        }
-        let window_pos = ctx.input(|i| i.viewport().inner_rect)
+        if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
+        let window_pos = ctx
+            .input(|i| i.viewport().inner_rect)
             .map(|r| r.min)
-            .unwrap_or_else(|| {println!("zero"); egui::Pos2::ZERO});
+            .unwrap_or_else(|| {
+                println!("zero");
+                egui::Pos2::ZERO
+            });
         // let ppp = ctx.pixels_per_point();
-        
+
         {
             let mut w = self.window_state.lock().unwrap();
             w.pos = window_pos;
@@ -161,7 +189,8 @@ impl eframe::App for App {
         ctx.input(|i| {
             for event in &i.events {
                 // println!("Event : {:?}", event);
-                self.input_manager.manage_events(&mut self.state, event.clone());
+                self.input_manager
+                    .manage_events(&mut self.state, event.clone(), self.ppp);
             }
         });
     }
@@ -191,5 +220,3 @@ impl eframe::App for App {
 
     fn raw_input_hook(&mut self, _ctx: &egui::Context, _raw_input: &mut egui::RawInput) {}
 }
-
-

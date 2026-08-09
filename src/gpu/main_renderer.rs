@@ -52,7 +52,7 @@ pub struct MainRenderer {
 }
 
 impl MainRenderer {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat) -> Self {
+    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat, width: u32, height: u32) -> Self {
         // --- Load shaders ---
         let cs_current = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("compute current"),
@@ -81,7 +81,7 @@ impl MainRenderer {
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("uniforms"),
             contents: bytemuck::bytes_of(&Uniforms {
-                canvas_size: [1920.0, 1200.0],
+                canvas_size: [width as f32, height as f32],
                 view_offset: [0.0, 0.0],
                 zoom: 1.0,
                 subdivisions: 1,

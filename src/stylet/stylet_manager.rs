@@ -81,6 +81,7 @@ impl StyletManager {
             return;
         }
         let gpu_rect = opt_gpu_rect.unwrap();
+        println!("gpu rect {:?} {:?}", gpu_rect, pos);
         if gpu_rect.contains(pos) {
             if let Some(file) = state.current_file.as_mut() {
                 let draw_pos =
@@ -96,7 +97,8 @@ impl StyletManager {
                 }
             }
         } else {
-            println!("Outside the gpu rect {:?} {:?}",gpu_rect, pos);
+            // println!("Outside the gpu rect {:?} {:?}", gpu_rect, pos);
+            println!("Outside");
         }
     }
 

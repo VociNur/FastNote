@@ -2,7 +2,6 @@ use eframe::egui::{self, Event, Pos2, TouchId};
 
 use crate::state::State;
 
-
 #[derive(Clone)]
 pub struct Finger {
     pub id: TouchId,
@@ -32,7 +31,7 @@ impl Default for InputManager {
 }
 
 impl InputManager {
-    pub fn manage_events(self: &mut Self, state: &mut State, event: Event) {
+    pub fn manage_events(self: &mut Self, state: &mut State, event: Event, ppp: f32) {
         match event {
             egui::Event::Touch {
                 device_id: _device_id,
@@ -54,7 +53,7 @@ impl InputManager {
                             self.user_inputs.fingers.iter().position(|f| f.id == id);
                         if let Some(finger_id) = opt_finger_id {
                             // let finger = &mut self.user_inputs.fingers[finger_id].clone();
-                            self.on_finger_move(state, finger_id, pos);
+                            self.on_finger_move(state, finger_id, pos, ppp);
                             self.user_inputs.fingers[finger_id].pos = pos;
                         }
                     }
@@ -84,13 +83,12 @@ impl InputManager {
 
     pub fn on_finger_start(self: &mut Self, state: &mut State, finger: &mut Finger) {}
 
-    pub fn on_finger_move(self: &mut Self, state: &mut State, finger_id: usize, new_pos: Pos2) {
-
+    pub fn on_finger_move(self: &mut Self, state: &mut State, finger_id: usize, new_pos: Pos2, ppp: f32) {
         //Le zoom devrait être limité à 4
         let last_finger = &self.user_inputs.fingers[finger_id].clone();
         if self.nbr_finger() == 1 {
             // println!("delta: {}", new_pos - last_finger.pos);
-            state.gpu_view.top_left -= (new_pos - last_finger.pos)/state.gpu_view.zoom;
+            state.gpu_view.top_left -= (new_pos - last_finger.pos) / state.gpu_view.zoom * ppp;
         }
 
         if self.nbr_finger() == 2 {
@@ -100,13 +98,13 @@ impl InputManager {
             let new_dist = (new_pos - other.pos).length();
 
             let scale = new_dist / old_dist;
-// Point central entre les deux doigts → centre du zoom
+            // Point central entre les deux doigts → centre du zoom
             let center = (new_pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
             // Zoom centré sur le point central
-            //Le other nous sert de repère            
+            //Le other nous sert de repère
             state.gpu_view.zoom *= scale;
             let last_center = (last_finger.pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
-            state.gpu_view.top_left += center-last_center;
+            state.gpu_view.top_left += center - last_center;
         }
     }
 

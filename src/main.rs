@@ -6,6 +6,16 @@ use FastNote::icons::Icons;
 fn main() -> eframe::Result {
     env_logger::init();
 
+    let (width, height) = match screen_size::get_primary_screen_size() {
+        Ok((width, height)) => {
+            println!("Largeur : {}, Hauteur : {}", width, height);
+            (width, height)
+        }
+        Err(e) => {
+            println!("Impossible de récupérer la taille de l'écran : {:?}", e);
+            (1, 1)
+        }
+    };
     let native_options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
         multisampling: 4,
@@ -28,20 +38,13 @@ fn main() -> eframe::Result {
 
             // Initialise le renderer GPU
             let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
-            // let renderer = TriangleRenderer::new(&wgpu_state.device, wgpu_state.target_format);
-            // wgpu_state
-            //     .renderer
-            //     .write()
-            //     .callback_resources
-            //     .insert(renderer);
-            //
-            let renderer = MainRenderer::new(&wgpu_state.device, wgpu_state.target_format);
+            let renderer = MainRenderer::new(&wgpu_state.device, wgpu_state.target_format, width as u32, height as u32);
             wgpu_state
                 .renderer
                 .write()
                 .callback_resources
                 .insert(renderer);
-            Ok(Box::new(App::new(cc, icons)))
+            Ok(Box::new(App::new(cc, icons, width as u32, height as u32)))
         }),
     )
 }
