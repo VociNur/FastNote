@@ -65,7 +65,7 @@ pub fn spawn_pen_thread(
 
             input.dispatch().unwrap();
             let window_pos = window_state.lock().unwrap().pos;
-
+            
             for event in &mut input {
                 if let Event::Tablet(tablet_event) = event {
                     // if !matches!(tablet_event, TabletToolEvent::Axis(_)){

@@ -1,4 +1,4 @@
-use eframe::egui::{self, Rect};
+use eframe::egui::{self, Rect, TextStyle};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -27,6 +27,18 @@ pub struct App {
     // pub last_pen_state: Option<PenState>,
     //
     pub ppp: f32,
+
+    pub debug_info: DebugInfo,
+}
+impl DebugInfo {
+    pub fn push(&mut self, msg: impl Into<String>) {
+        self.lines.push(msg.into());
+    }
+}
+
+#[derive(Default)]
+pub struct DebugInfo {
+    pub lines: Vec<String>,
 }
 
 #[derive(Default, Clone)]
@@ -56,6 +68,7 @@ impl App {
             // last_pen_state: None,
             // clicks: vec![],
             ppp: 1.,
+            debug_info: DebugInfo::default(),
         }
     }
     // Called once before the first frame.
@@ -140,13 +153,12 @@ impl eframe::App for App {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let ctx = ui.ctx();
-        ctx.set_cursor_icon(self.state.cursor_icon);
+        self.debug_info.lines = vec![];
+        ui.ctx().set_cursor_icon(self.state.cursor_icon);
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);
-        ctx.set_visuals(visuals);
-
+        ui.ctx().set_visuals(visuals);
         draw_gui(ui, self);
         if self.state.edition_open {
             open_edition_mode(
@@ -156,13 +168,29 @@ impl eframe::App for App {
             );
         }
         self.ppp = ui.pixels_per_point();
+        egui::Window::new("Debug Panel")
+            .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))
+            .collapsible(false)
+            .resizable(true)
+            .default_width(250.0)
+            .default_height(200.0)
+            .show(ui.ctx(), |ui| {
+                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                ui.visuals_mut().panel_fill = egui::Color32::from_black_alpha(180);
+
+                ui.vertical(|ui| {
+                    for line in &self.debug_info.lines {
+                        ui.label(line);
+                    }
+                });
+            });
     }
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
         self.app_have_focus = has_focus;
 
         self.stylet_manager
-            .manage_events(&mut self.state, &has_focus, &self.gpu_rect);
+            .manage_events(ctx, &mut self.state, &has_focus, &self.gpu_rect);
         // println!("has focus{}", has_focus);
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
             println!("Save state");

@@ -43,10 +43,8 @@ var<storage, read_write> vertices: array<Vertex>;
 
 @compute @workgroup_size(64)
 fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
-
     let i = id.x;
 
-    // On relie point i -> i+1
     if (i + 1u >= arrayLength(&points)) {
         return;
     }
@@ -54,20 +52,25 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
     let p0 = points[i];
     let p1 = points[i + 1u];
 
-    // On écrit deux vertices : un segment simple
-    vertices[i * 2u] = Vertex(
-        p0.pos,
-        0.0,
-        0.0,
-        vec4<f32>(0.0, 0.0, 0.0, 1.0) // noir
-    );
+    let dir = normalize(p1.pos - p0.pos);
+    let normal = vec2<f32>(-dir.y, dir.x);   // rotation 90°
+    let half_thickness = 2.0;               // épaisseur en pixels
 
-    vertices[i * 2u + 1u] = Vertex(
-        p1.pos,
-        0.0,
-        0.0,
-        vec4<f32>(0.0, 0.0, 0.0, 1.0) // noir
-    );
+    let offset = normal * half_thickness;
+
+    let v0 = p0.pos + offset;
+    let v1 = p0.pos - offset;
+    let v2 = p1.pos + offset;
+    let v3 = p1.pos - offset;
+
+    let base = i * 6u;
+
+    vertices[base + 0u] = Vertex(v0, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    vertices[base + 1u] = Vertex(v1, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    vertices[base + 2u] = Vertex(v2, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    vertices[base + 3u] = Vertex(v2, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    vertices[base + 4u] = Vertex(v1, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    vertices[base + 5u] = Vertex(v3, 0.0, 0.0, vec4<f32>(0.0, 0.0, 0.0, 1.0));
 }
 
 

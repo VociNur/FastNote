@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use eframe::egui::{self, Pos2, Rect};
+use eframe::egui::{self, Context, Pos2, Rect};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
@@ -17,6 +17,7 @@ pub struct StyletManager {
 impl StyletManager {
     pub fn manage_events(
         self: &mut Self,
+        ctx: &Context,
         state: &mut State,
         has_focus: &bool,
         gpu_rect: &Option<Rect>,
@@ -25,7 +26,7 @@ impl StyletManager {
         for event in events {
             match event {
                 StyletEvent::Axis(axis_event_state) => {
-                    self.on_axis_event(state, &axis_event_state, gpu_rect);
+                    self.on_axis_event(ctx, state, &axis_event_state, gpu_rect);
                     self.stylet.pos = axis_event_state.pos;
                     self.stylet.pressure = axis_event_state.pressure;
                     self.stylet.distance = axis_event_state.distance;
@@ -34,7 +35,7 @@ impl StyletManager {
                     self.stylet.tool_type = axis_event_state.tool_type;
                 }
                 StyletEvent::Tip(tip_event_state) => {
-                    self.on_tip_event(state, &tip_event_state, gpu_rect);
+                    self.on_tip_event(ctx, state, &tip_event_state, gpu_rect);
                     self.stylet.pos = tip_event_state.pos;
                     self.stylet.pressure = tip_event_state.pressure;
                     self.stylet.distance = tip_event_state.distance;
@@ -63,6 +64,7 @@ impl StyletManager {
     }
     pub fn touch_gpu(
         self: &mut Self,
+        ctx: &Context,
         state: &mut State,
         pos: Pos2,
         pressure: f64,
@@ -72,7 +74,7 @@ impl StyletManager {
         if !self.stylet.pressed {
             return;
         }
-        println!("test");
+        // println!("test");
         // if state.current_file.is_none() {
         //     state.current_file = Some(UserFile::new(PathBuf::from("")));
         // }
@@ -81,7 +83,7 @@ impl StyletManager {
             return;
         }
         let gpu_rect = opt_gpu_rect.unwrap();
-        println!("gpu rect {:?} {:?}", gpu_rect, pos);
+        // println!("gpu rect {:?} {:?}", gpu_rect, pos);
         if gpu_rect.contains(pos) {
             if let Some(file) = state.current_file.as_mut() {
                 let draw_pos =
@@ -89,7 +91,7 @@ impl StyletManager {
                 let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
                 if tool_type == TabletToolType::Pen {
                     file.add_stroke_point(stroke_point);
-                    //println!("Add stroke point");
+                    ctx.request_repaint_after_secs(0.1);
                 } else if tool_type == TabletToolType::Eraser {
                     file.erase_at(draw_pos.to_pos2(), 1f32);
                 } else {
@@ -104,12 +106,14 @@ impl StyletManager {
 
     pub fn on_axis_event(
         self: &mut Self,
+        ctx: &Context,
         state: &mut State,
         axis_event_state: &AxisEventState,
         opt_gpu_rect: &Option<Rect>,
     ) {
         // println!("axis: {axis_event_state:?}");
         self.touch_gpu(
+            ctx,
             state,
             axis_event_state.pos,
             axis_event_state.pressure,
@@ -120,6 +124,7 @@ impl StyletManager {
 
     pub fn on_tip_event(
         self: &mut Self,
+        ctx: &Context,
         state: &mut State,
         tip_event_state: &TipEventState,
         opt_gpu_rect: &Option<Rect>,
@@ -129,6 +134,7 @@ impl StyletManager {
         if tip_event_state.tip_state == TipState::Down {
             state.cursor_icon = egui::CursorIcon::None;
             self.touch_gpu(
+                ctx,
                 state,
                 tip_event_state.pos,
                 tip_event_state.pressure,
