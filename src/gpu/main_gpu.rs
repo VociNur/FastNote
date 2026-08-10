@@ -2,6 +2,7 @@ use bytemuck::{Pod, Zeroable};
 use eframe::egui::{self, Rect};
 
 use crate::{app::App, color_to_rgb, gpu::main_renderer::MainCallback};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
@@ -28,6 +29,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     let mut finished_points: Vec<GpuPoint> = vec![];
     let mut nbr_stroke = 0;
     let mut nbr_point = 0;
+    let mut nbr_point_current_stroke = 0;
     for stroke in &app.state.current_file.as_ref().unwrap().strokes {
         if stroke.deleted {
             continue;
@@ -46,9 +48,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
         }
         nbr_stroke += 1;
     }
-    app.debug_info.push(format!("nbr_point {}", nbr_point));
-    app.debug_info.push(format!("nbr_stroke {}", nbr_stroke));
-    
+
     let mut current_points: Vec<GpuPoint> = vec![];
     for p in &app.state.current_file.as_ref().unwrap().current_stroke {
         current_points.push(GpuPoint {
@@ -60,8 +60,20 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             _pad2: 0,
             _pad3: 0,
         });
+        nbr_point_current_stroke += 1;
     }
 
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    app.debug_info.push(format!("time {}", now));
+    app.debug_info.push(format!("nbr_points {}", nbr_point));
+    app.debug_info.push(format!("nbr_strokes {}", nbr_stroke));
+    app.debug_info.push(format!(
+        "nbr_points_current_stroke {}",
+        nbr_point_current_stroke
+    ));
     ui.painter().add(egui_wgpu::Callback::new_paint_callback(
         rect,
         MainCallback {

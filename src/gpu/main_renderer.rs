@@ -52,7 +52,12 @@ pub struct MainRenderer {
 }
 
 impl MainRenderer {
-    pub fn new(device: &wgpu::Device, target_format: wgpu::TextureFormat, width: u32, height: u32) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        target_format: wgpu::TextureFormat,
+        width: u32,
+        height: u32,
+    ) -> Self {
         // --- Load shaders ---
         let cs_current = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("compute current"),
@@ -75,7 +80,7 @@ impl MainRenderer {
         });
 
         // --- Buffers ---
-        let max_points = 20_000usize;
+        let max_points = 100_000usize;
         let max_vertices = max_points * 8;
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -513,6 +518,8 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         );
 
         // 2. Points
+        println!("nbr current points gpu: {}", &self.current_points.len());
+        println!("nbr finished points gpu: {}", &self.finished_points.len());
         renderer.write_points_current(queue, &self.current_points);
         renderer.write_points_finished(queue, &self.finished_points);
 

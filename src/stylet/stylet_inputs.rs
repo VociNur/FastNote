@@ -64,8 +64,8 @@ pub fn spawn_pen_thread(
             unsafe { libc::poll(&mut pollfd, 1, -1) };
 
             input.dispatch().unwrap();
-            let window_pos = window_state.lock().unwrap().pos;
-            
+            let window_pos = window_state.lock().unwrap().pos.clone();
+            let mut batch = vec![];
             for event in &mut input {
                 if let Event::Tablet(tablet_event) = event {
                     // if !matches!(tablet_event, TabletToolEvent::Axis(_)){
@@ -83,53 +83,43 @@ pub fn spawn_pen_thread(
                     });
                     match tablet_event {
                         TabletToolEvent::Axis(axis_event) => {
-                            events
-                                .lock()
-                                .unwrap()
-                                .push(StyletEvent::Axis(AxisEventState::new(
-                                    pos,
-                                    axis_event.pressure(),
-                                    axis_event.distance(),
-                                    axis_event.tilt_x(),
-                                    axis_event.tilt_y(),
-                                    tooltype,
-                                )));
+                            batch.push(StyletEvent::Axis(AxisEventState::new(
+                                pos,
+                                axis_event.pressure(),
+                                axis_event.distance(),
+                                axis_event.tilt_x(),
+                                axis_event.tilt_y(),
+                                tooltype,
+                            )));
                         }
                         TabletToolEvent::Tip(tip_event) => {
-                            events
-                                .lock()
-                                .unwrap()
-                                .push(StyletEvent::Tip(TipEventState::new(
-                                    pos,
-                                    tip_event.pressure(),
-                                    tip_event.distance(),
-                                    tip_event.tilt_x(),
-                                    tip_event.tilt_y(),
-                                    tip_event.tip_state(),
-                                    tooltype,
-                                )));
+                            batch.push(StyletEvent::Tip(TipEventState::new(
+                                pos,
+                                tip_event.pressure(),
+                                tip_event.distance(),
+                                tip_event.tilt_x(),
+                                tip_event.tilt_y(),
+                                tip_event.tip_state(),
+                                tooltype,
+                            )));
                         }
                         TabletToolEvent::Proximity(proximity_event) => {
-                            events.lock().unwrap().push(StyletEvent::Proximity(
-                                ProximityEventState::new(
-                                    pos,
-                                    proximity_event.pressure(),
-                                    proximity_event.distance(),
-                                    proximity_event.tilt_x(),
-                                    proximity_event.tilt_y(),
-                                    proximity_event.proximity_state(),
-                                    tooltype,
-                                ),
-                            ));
+                            batch.push(StyletEvent::Proximity(ProximityEventState::new(
+                                pos,
+                                proximity_event.pressure(),
+                                proximity_event.distance(),
+                                proximity_event.tilt_x(),
+                                proximity_event.tilt_y(),
+                                proximity_event.proximity_state(),
+                                tooltype,
+                            )));
                         }
                         TabletToolEvent::Button(button_event) => {
-                            events.lock().unwrap().push(StyletEvent::Button(
-                                ButtonEventState::new(
-                                    button_event.button(),
-                                    button_event.button_state(),
-                                    tooltype,
-                                ),
-                            ));
+                            batch.push(StyletEvent::Button(ButtonEventState::new(
+                                button_event.button(),
+                                button_event.button_state(),
+                                tooltype,
+                            )));
                         }
                         _ => todo!(),
                     }
@@ -137,6 +127,14 @@ pub fn spawn_pen_thread(
 
                 //attention, bouton erase considéré à part
             }
+
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            events.lock().unwrap().extend(batch);
+
+            // println!("append");
+            // println!("append");
+            // println!("append");
+            // println!("append");
         }
     });
 }
