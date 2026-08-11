@@ -1,18 +1,38 @@
-use eframe::egui::{self, Rect, TextStyle};
+use crate::stylet::stylet_manager::{
+    AxisEventState, ButtonEventState, ProximityEventState, StyletEvent, TipEventState,
+};
+use eframe::egui::{self, Pos2, Rect};
+use std::sync::{Arc, Mutex};
 use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
+    fs::OpenOptions,
+    os::unix::{
+        fs::OpenOptionsExt,
+        io::{AsRawFd, OwnedFd},
+    },
+    path::Path,
 };
 
+use input::{
+    event::{
+        tablet_tool::{TabletToolEvent, TabletToolEventTrait, TabletToolType},
+        Event,
+    },
+    Libinput, LibinputInterface,
+};
+use std::path::PathBuf;
+
 use crate::icons::Icons;
-use crate::stylet::stylet_inputs::spawn_pen_thread;
 use crate::stylet::stylet_manager::StyletManager;
 use crate::ui::ui::draw_gui;
 use crate::{
     edition::open_edition_mode, input_manager::InputManager, projects::user_file::UserFile,
     state::State,
 };
-
+#[derive(Default, Clone)]
+pub struct WindowState {
+    pub pos: egui::Pos2,
+    // pub ppp: f32, // pixels_per_point
+}
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
     pub app_have_focus: bool,
@@ -29,6 +49,9 @@ pub struct App {
     pub ppp: f32,
 
     pub debug_info: DebugInfo,
+    //poru stylet input
+    libinput: Option<Libinput>,
+    libinput_fd: Option<i32>,
 }
 impl DebugInfo {
     pub fn push(&mut self, msg: impl Into<String>) {
@@ -47,12 +70,25 @@ pub struct PenState {
     pub pressed: bool,
     pub pressure: f64,
 }
+struct Interface;
 
-#[derive(Default, Clone)]
-pub struct WindowState {
-    pub pos: egui::Pos2,
-    // pub ppp: f32, // pixels_per_point
+impl LibinputInterface for Interface {
+    fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<OwnedFd, i32> {
+        OpenOptions::new()
+            .custom_flags(flags)
+            .read(true)
+            .write(true)
+            .open(path)
+            //.map(|f| unsafe { OwnedFd::from_raw_fd(f.into_raw_fd()) })
+            .map(OwnedFd::from)
+            .map_err(|e| e.raw_os_error().unwrap_or(-1))
+    }
+
+    fn close_restricted(&mut self, fd: OwnedFd) {
+        drop(fd);
+    }
 }
+
 impl App {
     fn default(icons: Icons) -> Self {
         Self {
@@ -69,6 +105,8 @@ impl App {
             // clicks: vec![],
             ppp: 1.,
             debug_info: DebugInfo::default(),
+            libinput: None,
+            libinput_fd: None,
         }
     }
     // Called once before the first frame.
@@ -78,15 +116,112 @@ impl App {
         println!("msaa samples: {:?}", wgpu_state.target_format);
         app.x_screen_size = width;
         app.y_screen_size = height;
-        spawn_pen_thread(
-            Arc::clone(&app.window_state),
-            Arc::clone(&app.stylet_manager.events),
-            width,
-            height,
-        );
+        // spawn_pen_thread(
+        //     Arc::clone(&app.window_state),
+        //     Arc::clone(&app.stylet_manager.events),
+        //     width,
+        //     height,
+        // );
+
+        //stylet input
+        let mut input = Libinput::new_with_udev(Interface);
+        input.udev_assign_seat("seat0").unwrap();
+
+        app.libinput_fd = Some(input.as_raw_fd());
+        app.libinput = Some(input);
+        //
+        // end stylet input
         app
     }
 
+    #[allow(unsafe_code)]
+    fn read_stylet_input(&mut self, window_pos: Pos2, width: u32, height: u32) {
+        if let (Some(input), Some(fd)) = (&mut self.libinput, self.libinput_fd) {
+            let mut pollfd = libc::pollfd {
+                fd,
+                events: libc::POLLIN,
+                revents: 0,
+            };
+
+            unsafe {
+                libc::poll(&mut pollfd, 1, 0); // timeout = 0 → non bloquant
+            }
+
+            let mut batch = vec![];
+            // 🚨 IMPORTANT : ne dispatch QUE si poll dit qu’il y a des events
+            if pollfd.revents & libc::POLLIN != 0 {
+                input.dispatch().unwrap();
+
+                for event in input {
+                    println!("{:?}", event);
+                    if let Event::Tablet(tablet_event) = event {
+                        // if !matches!(tablet_event, TabletToolEvent::Axis(_)){
+                        //     println!("tablet_event: {tablet_event:?}");
+
+                        // }
+                        // println!("{:?}", tablet_event.tool().tool_type());
+                        let pos = egui::pos2(
+                            tablet_event.x_transformed(width) as f32 - window_pos.x * 2.,
+                            tablet_event.y_transformed(height) as f32 - window_pos.y * 2., //todo ppp
+                        );
+                        let tooltype = tablet_event.tool().tool_type().unwrap_or_else(|| {
+                            println!("No tool type, default: pen");
+                            TabletToolType::Pen
+                        });
+                        match tablet_event {
+                            TabletToolEvent::Axis(axis_event) => {
+                                batch.push(StyletEvent::Axis(AxisEventState::new(
+                                    pos,
+                                    axis_event.pressure(),
+                                    axis_event.distance(),
+                                    axis_event.tilt_x(),
+                                    axis_event.tilt_y(),
+                                    tooltype,
+                                )));
+                            }
+                            TabletToolEvent::Tip(tip_event) => {
+                                batch.push(StyletEvent::Tip(TipEventState::new(
+                                    pos,
+                                    tip_event.pressure(),
+                                    tip_event.distance(),
+                                    tip_event.tilt_x(),
+                                    tip_event.tilt_y(),
+                                    tip_event.tip_state(),
+                                    tooltype,
+                                )));
+                            }
+                            TabletToolEvent::Proximity(proximity_event) => {
+                                batch.push(StyletEvent::Proximity(ProximityEventState::new(
+                                    pos,
+                                    proximity_event.pressure(),
+                                    proximity_event.distance(),
+                                    proximity_event.tilt_x(),
+                                    proximity_event.tilt_y(),
+                                    proximity_event.proximity_state(),
+                                    tooltype,
+                                )));
+                            }
+                            TabletToolEvent::Button(button_event) => {
+                                batch.push(StyletEvent::Button(ButtonEventState::new(
+                                    button_event.button(),
+                                    button_event.button_state(),
+                                    tooltype,
+                                )));
+                            }
+                            _ => todo!(),
+                        }
+                    }
+
+                    //attention, bouton erase considéré à part
+                }
+            }
+            let change = batch.len() != 0;
+            self.stylet_manager.events.lock().unwrap().extend(batch);
+            if change {
+                // ctx.request_repaint(); // indispensable pour egui
+            }
+        }
+    }
     pub fn user_opened_project(&mut self, path: PathBuf) {
         // self.state.opened_projects.push(UserProject::new(path.file_stem().and_then(|s| s.to_str()).unwrap_or("Unnamed").to_owned(), path.clone(), Color32::BLACK));
 
@@ -221,6 +356,7 @@ impl eframe::App for App {
                     .manage_events(&mut self.state, event.clone(), self.ppp);
             }
         });
+        self.read_stylet_input(window_pos, 0, 0);
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
