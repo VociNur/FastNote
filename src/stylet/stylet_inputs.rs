@@ -11,7 +11,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use eframe::egui::{self, Vec2};
+use eframe::egui::{self};
 use input::event::tablet_tool::TabletToolType;
 use input::{
     event::{
@@ -48,6 +48,7 @@ pub fn spawn_pen_thread(
     events: Arc<Mutex<Vec<StyletEvent>>>,
     width: u32,
     height: u32,
+    ctx: egui::Context,
 ) {
     thread::spawn(move || {
         let mut input = Libinput::new_with_udev(Interface);
@@ -127,10 +128,12 @@ pub fn spawn_pen_thread(
 
                 //attention, bouton erase considéré à part
             }
-
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            let must_repaint = !batch.is_empty();
             events.lock().unwrap().extend(batch);
-
+            if must_repaint {
+                ctx.request_repaint_after_secs(0.1);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
             // println!("append");
             // println!("append");
             // println!("append");

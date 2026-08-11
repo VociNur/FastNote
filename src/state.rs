@@ -42,7 +42,7 @@ pub struct State{
     //File
     pub new_project_dialog: NewProjectDialog, 
     pub opened_projects: OpenedProjectsManager,
-    pub current_file: Option<UserFile>,
+        pub current_file: Option<UserFile>,
 
     //Menu
     pub file_tree: FileTreeState,

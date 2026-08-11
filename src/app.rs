@@ -29,6 +29,7 @@ pub struct App {
     pub ppp: f32,
 
     pub debug_info: DebugInfo,
+    pub nbr_redraw: u32,
 }
 impl DebugInfo {
     pub fn push(&mut self, msg: impl Into<String>) {
@@ -69,6 +70,7 @@ impl App {
             // clicks: vec![],
             ppp: 1.,
             debug_info: DebugInfo::default(),
+            nbr_redraw: 0,
         }
     }
     // Called once before the first frame.
@@ -83,6 +85,7 @@ impl App {
             Arc::clone(&app.stylet_manager.events),
             width,
             height,
+            cc.egui_ctx.clone(),
         );
         app
     }

@@ -438,7 +438,7 @@ impl MainRenderer {
         pass.set_bind_group(0, &self.bg_compute_current, &[]);
 
         // Un segment = 2 vertices → compute shader écrit 2 * n_points
-        self.vertex_count_current = n_points.saturating_sub(1) * 2;
+        self.vertex_count_current = n_points.saturating_sub(1) * 6;
 
         let workgroups = (n_points + 63) / 64;
         pass.dispatch_workgroups(workgroups, 1, 1);
@@ -489,6 +489,7 @@ impl MainRenderer {
 pub struct MainCallback {
     pub current_points: Vec<GpuPoint>,
     pub finished_points: Vec<GpuPoint>,
+    pub redraw_finished: bool,
     pub canvas_size: Vec2,
     pub gpu_view: GpuView,
 }
@@ -518,15 +519,19 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         );
 
         // 2. Points
-        println!("nbr current points gpu: {}", &self.current_points.len());
-        println!("nbr finished points gpu: {}", &self.finished_points.len());
+        // println!("nbr current points gpu: {}", &self.current_points.len());
+        // println!("nbr finished points gpu: {}", &self.finished_points.len());
         renderer.write_points_current(queue, &self.current_points);
-        renderer.write_points_finished(queue, &self.finished_points);
+        if self.redraw_finished {
+            renderer.write_points_finished(queue, &self.finished_points);
+        }
 
         // 3. Compute
         renderer.dispatch_current_compute(encoder, self.current_points.len() as u32);
-        renderer.dispatch_finished_compute(encoder, self.finished_points.len() as u32);
 
+        if self.redraw_finished {
+            renderer.dispatch_finished_compute(encoder, self.finished_points.len() as u32);
+        }
         vec![]
     }
 
