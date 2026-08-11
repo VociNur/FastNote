@@ -17,6 +17,7 @@ pub mod paths;
 pub mod pen;
 pub mod projects;
 pub mod state;
+pub mod stroke_simplifier;
 pub mod strokes;
 pub mod stylet;
 pub mod themes;

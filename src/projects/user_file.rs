@@ -7,6 +7,7 @@ use crate::{
     load_persistent_data,
     pen::Pen,
     save_persistent_data,
+    stroke_simplifier::simplify_stroke_rdp,
     strokes::{PenStroke, StrokePoint},
 };
 
@@ -60,7 +61,8 @@ impl UserFile {
     }
     pub fn save_current_stroke(&mut self, pen: &Pen) {
         let points = std::mem::take(&mut self.current_stroke);
-        let pen_stroke = PenStroke::new(pen.color, points, pen.size);
+        let mut pen_stroke = PenStroke::new(pen.color, points, pen.size);
+        simplify_stroke_rdp(&mut pen_stroke, 0.2);
         self.add_stroke(pen_stroke);
     }
     pub fn erase_at(&mut self, pos: egui::Pos2, radius: f32) {

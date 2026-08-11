@@ -24,29 +24,36 @@ pub struct MainRenderer {
     // --- Compute pipelines ---
     pub compute_current_pipeline: wgpu::ComputePipeline,
     pub compute_finished_pipeline: wgpu::ComputePipeline,
+    pub compute_debug_pipeline: wgpu::ComputePipeline,
 
     // --- Render pipelines ---
     pub render_current_pipeline: wgpu::RenderPipeline,
     pub render_finished_pipeline: wgpu::RenderPipeline,
+    pub render_debug_pipeline: wgpu::RenderPipeline,
 
     // --- Buffers ---
     pub points_current_buffer: wgpu::Buffer,
     pub points_finished_buffer: wgpu::Buffer,
+    pub points_debug_buffer: wgpu::Buffer,
 
     pub vertices_current_buffer: wgpu::Buffer,
     pub vertices_finished_buffer: wgpu::Buffer,
+    pub vertices_debug_buffer: wgpu::Buffer,
 
     pub uniform_buffer: wgpu::Buffer,
 
     // --- Bind groups ---
     pub bg_compute_current: wgpu::BindGroup,
     pub bg_compute_finished: wgpu::BindGroup,
+    pub bg_compute_debug: wgpu::BindGroup,
 
     pub bg_render_current: wgpu::BindGroup,
     pub bg_render_finished: wgpu::BindGroup,
+    pub bg_render_debug: wgpu::BindGroup,
 
     pub vertex_count_current: u32,
     pub vertex_count_finished: u32,
+    pub vertex_count_debug: u32,
 
     pub max_points: usize,
 }
@@ -61,7 +68,7 @@ impl MainRenderer {
         // --- Load shaders ---
         let cs_current = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("compute current"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/current_stroke.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/finished_stroke.wgsl").into()),
         });
 
         let cs_finished = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -69,18 +76,36 @@ impl MainRenderer {
             source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/finished_stroke.wgsl").into()),
         });
 
+        // let cs_finished = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("compute finished"),
+        //     source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/current_stroke.wgsl").into()),
+        // });
         let vs_current = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("render current"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/current_stroke.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/finished_stroke.wgsl").into()),
         });
 
         let vs_finished = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("render finished"),
             source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/finished_stroke.wgsl").into()),
         });
+        // let vs_finished = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("render finished"),
+        //     source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/current_stroke.wgsl").into()),
+        // });
+
+        let cs_debug = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("compute debug"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/square.wgsl").into()),
+        });
+
+        let vs_debug = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("render debug"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("./shaders/square.wgsl").into()),
+        });
 
         // --- Buffers ---
-        let max_points = 100_000usize;
+        let max_points = 300_000usize;
         let max_vertices = max_points * 8;
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -109,6 +134,13 @@ impl MainRenderer {
             mapped_at_creation: false,
         });
 
+        let points_debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("points debug"),
+            size: (max_points * std::mem::size_of::<GpuPoint>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let vertices_current_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("vertices current"),
             size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
@@ -118,6 +150,12 @@ impl MainRenderer {
 
         let vertices_finished_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("vertices finished"),
+            size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        });
+        let vertices_debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("vertices debug"),
             size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
             mapped_at_creation: false,
@@ -202,6 +240,25 @@ impl MainRenderer {
             ],
         });
 
+        // --- Compute bind groups ---
+        let bg_compute_debug = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bg compute debug"),
+            layout: &compute_bgl,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: points_debug_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: vertices_debug_buffer.as_entire_binding(),
+                },
+            ],
+        });
         // --- Compute pipelines ---
         let compute_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("compute layout"),
@@ -229,6 +286,15 @@ impl MainRenderer {
                 cache: None,
             });
 
+        let compute_debug_pipeline =
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("compute debug pipeline"),
+                layout: Some(&compute_layout),
+                module: &cs_debug,
+                entry_point: Some("cs_main"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
         // --- Render bind group layout ---
         let render_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("render bgl"),
@@ -262,6 +328,14 @@ impl MainRenderer {
             }],
         });
 
+        let bg_render_debug = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bg render debug"),
+            layout: &render_bgl,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
         // --- Render pipelines ---
         let render_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("render layout"),
@@ -371,29 +445,86 @@ impl MainRenderer {
                 cache: None,
             });
 
+        let render_debug_pipeline =
+            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("render debug pipeline"),
+                layout: Some(&render_layout),
+                vertex: wgpu::VertexState {
+                    module: &vs_debug,
+                    entry_point: Some("vs_main"),
+                    buffers: &[wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<Vertex>() as u64,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &[
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x2,
+                                offset: 0,
+                                shader_location: 0,
+                            },
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32,
+                                offset: 8,
+                                shader_location: 1,
+                            },
+                            wgpu::VertexAttribute {
+                                format: wgpu::VertexFormat::Float32x4,
+                                offset: 16,
+                                shader_location: 2,
+                            },
+                        ],
+                    }],
+                    compilation_options: Default::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &vs_debug,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: target_format,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: Default::default(),
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 4,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview_mask: None,
+                cache: None,
+            });
         Self {
             compute_current_pipeline,
             compute_finished_pipeline,
+            compute_debug_pipeline,
 
             render_current_pipeline,
             render_finished_pipeline,
+            render_debug_pipeline,
 
             points_current_buffer,
             points_finished_buffer,
+            points_debug_buffer,
 
             vertices_current_buffer,
             vertices_finished_buffer,
+            vertices_debug_buffer,
 
             uniform_buffer,
 
             bg_compute_current,
             bg_compute_finished,
+            bg_compute_debug,
 
             bg_render_current,
             bg_render_finished,
+            bg_render_debug,
 
             vertex_count_current: 0,
             vertex_count_finished: 0,
+            vertex_count_debug: 0,
 
             max_points,
         }
@@ -413,6 +544,7 @@ impl MainRenderer {
     // ============================================================
 
     pub fn write_points_current(&self, queue: &wgpu::Queue, points: &[GpuPoint]) {
+        println!("write points current {}", points.len());
         queue.write_buffer(&self.points_current_buffer, 0, bytemuck::cast_slice(points));
     }
 
@@ -424,6 +556,9 @@ impl MainRenderer {
         );
     }
 
+    pub fn write_points_debug(&self, queue: &wgpu::Queue, points: &[GpuPoint]) {
+        queue.write_buffer(&self.points_debug_buffer, 0, bytemuck::cast_slice(points));
+    }
     // ============================================================
     // 3. DISPATCH DES COMPUTE SHADERS
     // ============================================================
@@ -438,7 +573,7 @@ impl MainRenderer {
         pass.set_bind_group(0, &self.bg_compute_current, &[]);
 
         // Un segment = 2 vertices → compute shader écrit 2 * n_points
-        self.vertex_count_current = n_points.saturating_sub(1) * 6;
+        self.vertex_count_current = n_points; //.saturating_sub(1) * 6;
 
         let workgroups = (n_points + 63) / 64;
         pass.dispatch_workgroups(workgroups, 1, 1);
@@ -454,7 +589,23 @@ impl MainRenderer {
         pass.set_bind_group(0, &self.bg_compute_finished, &[]);
 
         // Un carré = 6 vertices
-        self.vertex_count_finished = n_points * 6;
+        self.vertex_count_finished = n_points;
+
+        let workgroups = (n_points + 63) / 64;
+        pass.dispatch_workgroups(workgroups, 1, 1);
+    }
+
+    pub fn dispatch_debug_compute(&mut self, encoder: &mut wgpu::CommandEncoder, n_points: u32) {
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("compute debug stroke"),
+            timestamp_writes: None,
+        });
+
+        pass.set_pipeline(&self.compute_debug_pipeline);
+        pass.set_bind_group(0, &self.bg_compute_debug, &[]);
+
+        // Un carré = 6 vertices
+        self.vertex_count_debug = n_points * 6;
 
         let workgroups = (n_points + 63) / 64;
         pass.dispatch_workgroups(workgroups, 1, 1);
@@ -485,11 +636,22 @@ impl MainRenderer {
         pass.set_vertex_buffer(0, self.vertices_finished_buffer.slice(..));
         pass.draw(0..self.vertex_count_finished, 0..1);
     }
+    pub fn render_debug(&self, pass: &mut wgpu::RenderPass<'_>) {
+        if self.vertex_count_debug == 0 {
+            return;
+        }
+
+        pass.set_pipeline(&self.render_debug_pipeline);
+        pass.set_bind_group(0, &self.bg_render_debug, &[]);
+        pass.set_vertex_buffer(0, self.vertices_debug_buffer.slice(..));
+        pass.draw(0..self.vertex_count_debug, 0..1);
+    }
 }
 pub struct MainCallback {
     pub current_points: Vec<GpuPoint>,
     pub finished_points: Vec<GpuPoint>,
     pub redraw_finished: bool,
+    pub nbr_stroke: usize,
     pub canvas_size: Vec2,
     pub gpu_view: GpuView,
 }
@@ -524,13 +686,19 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         renderer.write_points_current(queue, &self.current_points);
         if self.redraw_finished {
             renderer.write_points_finished(queue, &self.finished_points);
+            renderer.write_points_debug(queue, &self.finished_points);
         }
 
         // 3. Compute
-        renderer.dispatch_current_compute(encoder, self.current_points.len() as u32);
+        renderer.dispatch_current_compute(encoder, 6 * 10 * self.current_points.len() as u32 + 10);
 
         if self.redraw_finished {
-            renderer.dispatch_finished_compute(encoder, self.finished_points.len() as u32);
+            renderer.dispatch_finished_compute(
+                encoder,
+                6 * 10 * self.finished_points.len() as u32 + 10,
+            ); // let base = (i * subdivisions + s-1u) * 6u + 5;
+               //donc au max: subdivision * nbr de points + s
+            renderer.dispatch_debug_compute(encoder, self.finished_points.len() as u32);
         }
         vec![]
     }
@@ -544,6 +712,9 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         let renderer = resources.get::<MainRenderer>().unwrap();
 
         renderer.render_finished(pass);
-        renderer.render_current(pass);
+        if !self.current_points.is_empty() {
+            renderer.render_current(pass);
+        }
+        // renderer.render_debug(pass);
     }
 }

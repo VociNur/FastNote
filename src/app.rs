@@ -1,4 +1,4 @@
-use eframe::egui::{self, Rect, TextStyle};
+use eframe::egui::{self, Rect};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
