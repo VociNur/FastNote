@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::egui::{self, Color32};
+use eframe::egui::{self};
 use serde::{Deserialize, Serialize};
 
 use crate::{

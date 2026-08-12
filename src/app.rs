@@ -1,4 +1,4 @@
-use eframe::egui::{self, Rect};
+use eframe::egui::{self, Rect, ViewportId};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -146,6 +146,48 @@ impl App {
         }
         self.state.current_file = Some(user_file.unwrap());
     }
+
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let has_focus = ctx.input(|i| i.focused);
+        self.app_have_focus = has_focus;
+
+        self.stylet_manager
+            .manage_events(ctx, &mut self.state, &has_focus, &self.gpu_rect);
+        // println!("has focus{}", has_focus);
+        if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
+            println!("Save state");
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
+            println!("Load state");
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
+        let window_pos = ctx
+            .input(|i| i.viewport().outer_rect)
+            .map(|r| r.min)
+            .unwrap_or_else(|| {
+                println!("zero");
+                egui::Pos2::ZERO
+            });
+        println!("window_pos: {:?}", window_pos);
+        let window_pos2 = ctx.input(|i| i.viewport_rect().min);
+        println!("window_pos2: {:?}", window_pos2);
+        let window3 = frame.winit_window().unwrap().outer_position();
+        println!("window_pos2: {:?}", window3);
+
+        {
+            let mut w = self.window_state.lock().unwrap();
+            w.pos = window_pos;
+            // w.ppp = ppp;
+        };
+
+        ctx.input(|i| {
+            for event in &i.events {
+                // println!("Event : {:?}", event);
+                self.input_manager
+                    .manage_events(&mut self.state, event.clone(), self.ppp);
+            }
+        });
+    }
 }
 
 impl eframe::App for App {
@@ -155,7 +197,9 @@ impl eframe::App for App {
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        self.update(ui.ctx(), frame);
+        // println!("viewport {}", ViewportId::ROOT);
         self.debug_info.lines = vec![];
         ui.ctx().set_cursor_icon(self.state.cursor_icon);
 
@@ -187,45 +231,6 @@ impl eframe::App for App {
                     }
                 });
             });
-    }
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let has_focus = ctx.input(|i| i.focused);
-        self.app_have_focus = has_focus;
-
-        self.stylet_manager
-            .manage_events(ctx, &mut self.state, &has_focus, &self.gpu_rect);
-        // println!("has focus{}", has_focus);
-        if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
-            println!("Save state");
-        }
-        if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
-            println!("Load state");
-        }
-        if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
-        let window_pos = ctx
-            .input(|i| i.viewport().inner_rect)
-            .map(|r| r.min)
-            .unwrap_or_else(|| {
-                println!("zero");
-                egui::Pos2::ZERO
-            });
-        println!("window_pos: {:?}", window_pos);
-        println!("ctx rect. {:?}", ctx.available_rect());
-        // let ppp = ctx.pixels_per_point();
-
-        {
-            let mut w = self.window_state.lock().unwrap();
-            w.pos = window_pos;
-            // w.ppp = ppp;
-        };
-
-        ctx.input(|i| {
-            for event in &i.events {
-                // println!("Event : {:?}", event);
-                self.input_manager
-                    .manage_events(&mut self.state, event.clone(), self.ppp);
-            }
-        });
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {

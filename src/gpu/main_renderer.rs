@@ -350,7 +350,7 @@ impl MainRenderer {
                 vertex: wgpu::VertexState {
                     module: &vs_current,
                     entry_point: Some("vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &[
@@ -370,7 +370,7 @@ impl MainRenderer {
                                 shader_location: 2,
                             },
                         ],
-                    }],
+                    })],
                     compilation_options: Default::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -401,7 +401,7 @@ impl MainRenderer {
                 vertex: wgpu::VertexState {
                     module: &vs_finished,
                     entry_point: Some("vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &[
@@ -421,7 +421,7 @@ impl MainRenderer {
                                 shader_location: 2,
                             },
                         ],
-                    }],
+                    })],
                     compilation_options: Default::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -452,7 +452,7 @@ impl MainRenderer {
                 vertex: wgpu::VertexState {
                     module: &vs_debug,
                     entry_point: Some("vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: std::mem::size_of::<Vertex>() as u64,
                         step_mode: wgpu::VertexStepMode::Vertex,
                         attributes: &[
@@ -472,7 +472,7 @@ impl MainRenderer {
                                 shader_location: 2,
                             },
                         ],
-                    }],
+                    })],
                     compilation_options: Default::default(),
                 },
                 fragment: Some(wgpu::FragmentState {

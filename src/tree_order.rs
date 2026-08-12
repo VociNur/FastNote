@@ -1,15 +1,12 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::paths::TREE_ORDER_FILE;
 
-
-
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TreeItem {
     pub path: PathBuf,
     pub is_dir: bool,
 }
-
 
 pub fn load_order(dir: &std::path::Path) -> Vec<PathBuf> {
     let order_file = dir.join(TREE_ORDER_FILE);
@@ -30,19 +27,22 @@ pub fn sorted_entries(dir: &std::path::Path) -> Vec<TreeItem> {
         .flatten()
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| p.file_name()
-            .and_then(|n| n.to_str())
-            .map(|n| !n.starts_with('.'))  // ignore les fichiers cachés comme .fastnote_order
-            .unwrap_or(false))
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| !n.starts_with('.')) // ignore les fichiers cachés comme .fastnote_order
+                .unwrap_or(false)
+        })
         .collect();
 
     let order = load_order(dir);
 
     // Trie selon l'ordre sauvegardé, met les nouveaux à la fin
-    let mut items: Vec<TreeItem> = order.iter()
+    let mut items: Vec<TreeItem> = order
+        .iter()
         .filter(|p| all.contains(p))
-        .map(|p| TreeItem { 
-            is_dir: p.is_dir(), 
+        .map(|p| TreeItem {
+            is_dir: p.is_dir(),
             path: p.clone(),
         })
         .collect();
@@ -50,9 +50,9 @@ pub fn sorted_entries(dir: &std::path::Path) -> Vec<TreeItem> {
     // Ajoute les fichiers pas encore dans l'ordre
     for path in &all {
         if !order.contains(path) {
-            items.push(TreeItem { 
-                is_dir: path.is_dir(), 
-                path: path.clone() 
+            items.push(TreeItem {
+                is_dir: path.is_dir(),
+                path: path.clone(),
             });
         }
     }
