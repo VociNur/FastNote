@@ -12,7 +12,7 @@ use crate::{
 use egui::{Button, RichText};
 
 pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
-    egui::Panel::left("left_panel").resizable(true).show_inside(ui, |ui| {
+    egui::Panel::left("left_panel").resizable(true).show(ui, |ui| {
         //.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
         match app.state.get_menu() {
             MenuMode::File => draw_file_menu_left(ui, app),

@@ -1,4 +1,4 @@
-use eframe::egui::{self, Pos2, Rect, ViewportId};
+use eframe::egui::{self, Pos2, Rect};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},

@@ -106,8 +106,8 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     ));
     app.debug_info
         .push(format!("nbr redraw finished stroke {}", app.nbr_redraw));
-    let mut subdivision = 10;//en général on va en prendre 10 c’est bien
-    while subdivision > 2 && subdivision * nbr_point>35_000{
+    let mut subdivision = 10; //en général on va en prendre 10 c’est bien
+    while subdivision > 2 && subdivision * nbr_point > 35_000 {
         subdivision -= 1;
     }
     ui.painter().add(egui_wgpu::Callback::new_paint_callback(
@@ -119,7 +119,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             nbr_stroke,
             canvas_size: rect.size(),
             gpu_view: app.state.gpu_view.clone(),
-            subdivision
+            subdivision,
         },
     ));
 }
