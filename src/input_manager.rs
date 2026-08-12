@@ -116,6 +116,6 @@ impl InputManager {
 
     pub fn on_finger_end(self: &mut Self, state: &mut State, last_finger: &Finger, end_pos: Pos2) {
         // state.gpu_view.top_left = Pos2 { x: 0f32, y: 0f32 };
-        println!("Actual zoom: {}", state.gpu_view.zoom);
+        // println!("Actual zoom: {}", state.gpu_view.zoom);
     }
 }

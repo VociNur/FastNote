@@ -145,7 +145,7 @@ impl StyletManager {
         tip_event_state: &TipEventState,
         opt_gpu_rect: &Option<Rect>,
     ) {
-        println!("tip: {tip_event_state:?}");
+        // println!("tip: {tip_event_state:?}");
         //
         if tip_event_state.tip_state == TipState::Down {
             state.cursor_icon = egui::CursorIcon::None;

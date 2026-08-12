@@ -77,17 +77,16 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    // 10 subdivisions par segment
-    let subdivisions = 10u;
+    let subdivisions = uniforms.subdivisions;
     var previous_pos = p1.pos;
     for (var s = 1u; s <= subdivisions; s++) {
         let t = f32(s) / f32(subdivisions); //0 and 1 must be done, not 0 directly because it’s previous pos
         let pos = catmull_rom(p0.pos, p1.pos, p2.pos, p3.pos, t);
 
         // Décode couleur u32 → vec4<f32>
-        let r = f32((p1.color >> 16u) & 255u) / 255.0;
-        let g = f32((p1.color >> 8u) & 255u) / 255.0;
-        let b = f32((p1.color >> 0u) & 255u) / 255.0;
+        let r = f32((p1.color >> 24u) & 255u) / 255.0;
+        let g = f32((p1.color >> 16u) & 255u) / 255.0;
+        let b = f32((p1.color >> 8u) & 255u) / 255.0;
 
         let base = (i * subdivisions + s-1u) * 6u;
          let dir = normalize(pos - previous_pos);

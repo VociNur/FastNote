@@ -75,8 +75,8 @@ pub fn spawn_pen_thread(
                     // }
                     // println!("{:?}", tablet_event.tool().tool_type());
                     let pos = egui::pos2(
-                        tablet_event.x_transformed(width) as f32 - window_pos.x * 2.,
-                        tablet_event.y_transformed(height) as f32 - window_pos.y * 2., //todo ppp
+                        tablet_event.x_transformed(width) as f32 - window_pos.x,
+                        tablet_event.y_transformed(height) as f32 - window_pos.y, //todo ppp
                     );
                     let tooltype = tablet_event.tool().tool_type().unwrap_or_else(|| {
                         println!("No tool type, default: pen");
@@ -140,4 +140,4 @@ pub fn spawn_pen_thread(
             // println!("append");
         }
     });
-    }
+}

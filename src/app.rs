@@ -1,4 +1,4 @@
-use eframe::egui::{self, Rect, ViewportId};
+use eframe::egui::{self, Pos2, Rect, ViewportId};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -161,22 +161,19 @@ impl App {
             println!("Load state");
         }
         if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
-        let window_pos = ctx
-            .input(|i| i.viewport().outer_rect)
-            .map(|r| r.min)
-            .unwrap_or_else(|| {
-                println!("zero");
-                egui::Pos2::ZERO
-            });
-        println!("window_pos: {:?}", window_pos);
-        let window_pos2 = ctx.input(|i| i.viewport_rect().min);
-        println!("window_pos2: {:?}", window_pos2);
-        let window3 = frame.winit_window().unwrap().outer_position();
-        println!("window_pos2: {:?}", window3);
+        // let window_pos = ctx
+        //     .input(|i| i.viewport().outer_rect)
+        //     .map(|r| r.min)
+        //     .unwrap_or_else(|| {
+        //         println!("zero");
+        //         egui::Pos2::ZERO
+        //     });
+        let window2 = frame.winit_window().unwrap().inner_position().unwrap();
+        // println!("window_pos2: {:?}", window2);
 
         {
             let mut w = self.window_state.lock().unwrap();
-            w.pos = window_pos;
+            w.pos = Pos2::new(window2.x as f32, window2.y as f32);
             // w.ppp = ppp;
         };
 

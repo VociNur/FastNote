@@ -26,6 +26,7 @@ pub struct Vertex {
 }
 
 pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
+    let debug = true;
     let mut finished_points: Vec<GpuPoint> = vec![];
     let mut nbr_stroke = 0;
     let mut nbr_point = 0;
@@ -33,7 +34,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     let redraw_finished = app.state.current_file.as_ref().unwrap().redraw_finished;
     // let redraw_finished = true;
     app.state.current_file.as_mut().unwrap().redraw_finished = false;
-    if redraw_finished {
+    if redraw_finished || debug {
         for stroke in &app.state.current_file.as_ref().unwrap().strokes {
             // if stroke.deleted {
             //     println!("stroke deleted");
@@ -105,6 +106,10 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     ));
     app.debug_info
         .push(format!("nbr redraw finished stroke {}", app.nbr_redraw));
+    let mut subdivision = 10;//en général on va en prendre 10 c’est bien
+    while subdivision > 2 && subdivision * nbr_point>35_000{
+        subdivision -= 1;
+    }
     ui.painter().add(egui_wgpu::Callback::new_paint_callback(
         rect,
         MainCallback {
@@ -114,6 +119,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             nbr_stroke,
             canvas_size: rect.size(),
             gpu_view: app.state.gpu_view.clone(),
+            subdivision
         },
     ));
 }

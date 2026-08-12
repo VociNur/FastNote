@@ -114,7 +114,7 @@ impl MainRenderer {
                 canvas_size: [width as f32, height as f32],
                 view_offset: [0.0, 0.0],
                 zoom: 1.0,
-                subdivisions: 1,
+                subdivisions: 10,
                 _pad: [0.0, 0.0],
             }),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
@@ -654,6 +654,7 @@ pub struct MainCallback {
     pub nbr_stroke: usize,
     pub canvas_size: Vec2,
     pub gpu_view: GpuView,
+    pub subdivision: u32,
 }
 impl egui_wgpu::CallbackTrait for MainCallback {
     fn prepare(
@@ -665,7 +666,7 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         resources: &mut egui_wgpu::CallbackResources,
     ) -> Vec<wgpu::CommandBuffer> {
         let renderer = resources.get_mut::<MainRenderer>().unwrap();
-
+            
         // 1. Uniforms
         let ppp = sd.pixels_per_point;
         queue.write_buffer(
@@ -675,7 +676,7 @@ impl egui_wgpu::CallbackTrait for MainCallback {
                 canvas_size: [self.canvas_size.x * ppp, self.canvas_size.y * ppp],
                 view_offset: [self.gpu_view.top_left.x, self.gpu_view.top_left.y],
                 zoom: self.gpu_view.zoom,
-                subdivisions: 1,
+                subdivisions: self.subdivision,
                 _pad: [0.0, 0.0],
             }),
         );
@@ -690,12 +691,12 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         }
 
         // 3. Compute
-        renderer.dispatch_current_compute(encoder, 6 * 10 * self.current_points.len() as u32 + 10);
+        renderer.dispatch_current_compute(encoder, 6 * self.subdivision * self.current_points.len() as u32 + self.subdivision);
 
         if self.redraw_finished {
             renderer.dispatch_finished_compute(
                 encoder,
-                6 * 10 * self.finished_points.len() as u32 + 10,
+                6 * self.subdivision * self.finished_points.len() as u32 + self.subdivision,
             ); // let base = (i * subdivisions + s-1u) * 6u + 5;
                //donc au max: subdivision * nbr de points + s
             renderer.dispatch_debug_compute(encoder, self.finished_points.len() as u32);
