@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
 use eframe::egui::{self, Context, Pos2, Rect};
 use input::event::{
@@ -12,6 +15,7 @@ use crate::{state::State, strokes::StrokePoint, stylet::stylet::StyletState};
 pub struct StyletManager {
     pub stylet: StyletState,
     pub events: Arc<Mutex<Vec<StyletEvent>>>, //un peu galère pas de trait copy
+    pub last_erase_at_pos: Option<Pos2>,
 }
 
 impl StyletManager {
@@ -92,10 +96,21 @@ impl StyletManager {
                 if tool_type == TabletToolType::Pen {
                     file.add_stroke_point(stroke_point);
                     ctx.request_repaint_after_secs(0.1);
+                    self.last_erase_at_pos = None;
                 } else if tool_type == TabletToolType::Eraser {
+                    let t = Instant::now();
+                    let epsilon_sq = 4.;
+                    if let Some(last_erase_pos) = self.last_erase_at_pos && last_erase_pos.distance_sq(draw_pos.to_pos2()) < epsilon_sq{
+                        println!("erase skip");
+                        return;
+                    }
                     file.erase_at(draw_pos.to_pos2(), 1f32);
+                    let elapsed = t.elapsed();
+                    self.last_erase_at_pos = Some(draw_pos.to_pos2());
+                    println!("Eraser timing: {:?}", elapsed);
                 } else {
                     println!("Tool type not defined");
+                    self.last_erase_at_pos = None;
                 }
             }
         } else {

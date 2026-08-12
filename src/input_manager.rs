@@ -83,8 +83,13 @@ impl InputManager {
 
     pub fn on_finger_start(self: &mut Self, state: &mut State, finger: &mut Finger) {}
 
-    pub fn on_finger_move(self: &mut Self, state: &mut State, finger_id: usize, new_pos: Pos2, ppp: f32) {
-        //Le zoom devrait être limité à 4
+    pub fn on_finger_move(
+        self: &mut Self,
+        state: &mut State,
+        finger_id: usize,
+        new_pos: Pos2,
+        ppp: f32,
+    ) {
         let last_finger = &self.user_inputs.fingers[finger_id].clone();
         if self.nbr_finger() == 1 {
             // println!("delta: {}", new_pos - last_finger.pos);
@@ -103,6 +108,7 @@ impl InputManager {
             // Zoom centré sur le point central
             //Le other nous sert de repère
             state.gpu_view.zoom *= scale;
+            state.gpu_view.zoom = state.gpu_view.zoom.clamp(1.0, 20.0);
             let last_center = (last_finger.pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
             state.gpu_view.top_left += center - last_center;
         }

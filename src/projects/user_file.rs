@@ -35,6 +35,7 @@ impl UserFile {
         let json = load_persistent_data(path.clone())?;
         let mut s: Self = serde_json::from_str(&json)?;
         s.path = path;
+        s.remove_destroyed_strokes();
         Ok(s)
     }
 
@@ -67,7 +68,7 @@ impl UserFile {
     }
     pub fn erase_at(&mut self, pos: egui::Pos2, radius: f32) {
         let eraser_rect = egui::Rect::from_center_size(pos, egui::vec2(radius * 2.0, radius * 2.0));
-
+        let radius_sq = radius * radius;
         for stroke in &mut self.strokes {
             if stroke.deleted {
                 continue;
@@ -79,9 +80,12 @@ impl UserFile {
             }
 
             // Test précis seulement si bbox intersecte
-            if stroke.intersects_point(pos, radius) {
+            // if stroke.intersects_point(pos, radius) {
+            //     stroke.deleted = true;
+            //     // println!("Deleted one");
+            // }
+            if stroke.touch_point(pos, radius_sq) {
                 stroke.deleted = true;
-                // println!("Deleted one");
             }
         }
         let err = self.save();
@@ -94,5 +98,8 @@ impl UserFile {
     }
     pub fn get_cloned_current_stroke(&self) -> Vec<StrokePoint> {
         self.current_stroke.clone()
+    }
+    pub fn remove_destroyed_strokes(&mut self) {
+        self.strokes.retain(|s| !s.deleted);
     }
 }

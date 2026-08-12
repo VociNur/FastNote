@@ -8,7 +8,7 @@ struct GpuPoint {
     pressure: f32,
     color: u32,
     is_last: u32,
-    _pad1: u32, //later: deleted?
+    deleted: u32,
     _pad2: u32,
     _pad3: u32,
 };
@@ -101,8 +101,8 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
             let v3 = pos - n * half_width;
 
 
-
-        let color = vec4<f32>(r, g, b, 1.0);
+        let opacity = select(1.0, 0.0, p0.deleted == 1u);
+        let color = vec4<f32>(r, g, b, opacity);
         vertices[base+0u] = Vertex(v0, 0.0, 0.0, color);
         vertices[base+1u] = Vertex(v1, 0.0, 0.0, color);
         vertices[base+2u] = Vertex(v2, 0.0, 0.0, color);

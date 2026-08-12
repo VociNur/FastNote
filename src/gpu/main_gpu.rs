@@ -11,7 +11,7 @@ pub struct GpuPoint {
     pressure: f32,
     color: u32,
     is_last: u32,
-    _pad1: u32,
+    deleted: u32,
     _pad2: u32,
     _pad3: u32,
 }
@@ -35,16 +35,17 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     app.state.current_file.as_mut().unwrap().redraw_finished = false;
     if redraw_finished {
         for stroke in &app.state.current_file.as_ref().unwrap().strokes {
-            if stroke.deleted {
-                continue;
-            }
+            // if stroke.deleted {
+            //     println!("stroke deleted");
+            //     continue;
+            // }
             for (j, p) in stroke.points.iter().enumerate() {
                 finished_points.push(GpuPoint {
                     pos: [p.pos.x, p.pos.y],
                     pressure: p.pressure as f32,
                     color: color_to_rgb(&stroke.color),
                     is_last: if j == stroke.points.len() - 1 { 1 } else { 0 },
-                    _pad1: 0,
+                    deleted: if stroke.deleted { 1 } else { 0 },
                     _pad2: 0,
                     _pad3: 0,
                 });
@@ -82,7 +83,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             } else {
                 0
             },
-            _pad1: 0,
+            deleted: 0,
             _pad2: 0,
             _pad3: 0,
         });

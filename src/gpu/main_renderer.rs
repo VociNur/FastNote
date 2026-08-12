@@ -544,7 +544,7 @@ impl MainRenderer {
     // ============================================================
 
     pub fn write_points_current(&self, queue: &wgpu::Queue, points: &[GpuPoint]) {
-        println!("write points current {}", points.len());
+        // println!("write points current {}", points.len());
         queue.write_buffer(&self.points_current_buffer, 0, bytemuck::cast_slice(points));
     }
 
@@ -715,6 +715,6 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         if !self.current_points.is_empty() {
             renderer.render_current(pass);
         }
-        // renderer.render_debug(pass);
+        renderer.render_debug(pass);
     }
 }
