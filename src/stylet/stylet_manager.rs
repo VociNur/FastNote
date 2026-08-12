@@ -9,7 +9,7 @@ use input::event::{
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
-use crate::{state::State, strokes::StrokePoint, stylet::stylet::StyletState};
+use crate::{state::State, strokes::strokes::StrokePoint, stylet::stylet::StyletState};
 
 #[derive(Default)]
 pub struct StyletManager {

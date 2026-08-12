@@ -1,24 +1,25 @@
-
 use eframe::egui::{self, Color32};
 
 use crate::{
     app::App,
     get_working_path,
     paths::{NOTEBOOK, PROJECT_DEFAULT_FOLDER},
+    projects::tree_order::{save_order, sorted_entries},
     projects::user_project::UserProject,
     state::MenuMode,
-    tree_order::{save_order, sorted_entries},
 };
 use egui::{Button, RichText};
 
 pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
-    egui::Panel::left("left_panel").resizable(true).show(ui, |ui| {
-        //.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
-        match app.state.get_menu() {
-            MenuMode::File => draw_file_menu_left(ui, app),
-            _ => {draw_home_menu_left(ui, app)}
-        }
-    });
+    egui::Panel::left("left_panel")
+        .resizable(true)
+        .show(ui, |ui| {
+            //.frame(egui::Frame{fill: Color32::fromrgb(255, 0, 0), ..Default..default()})
+            match app.state.get_menu() {
+                MenuMode::File => draw_file_menu_left(ui, app),
+                _ => draw_home_menu_left(ui, app),
+            }
+        });
 }
 
 //FILE
@@ -311,10 +312,10 @@ fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &mut App) {
                     // .size(20.)
                     // .color(app.stte.theme.notebook_tree_text_file_fg);
                     //
-                
+
                     let label = RichText::new(format!("{}", name))
-                            .color(Color32::BLACK)
-                            .size(24.);
+                        .color(Color32::BLACK)
+                        .size(24.);
                     let button = Button::new(label).fill(Color32::from_gray(128));
                     let response = ui.add(button);
 
@@ -425,10 +426,8 @@ fn show_tree(ui: &mut egui::Ui, dir: &std::path::Path, app: &mut App) {
 
     if let Some(dropped) = response.final_update() {
         // TODO : drop cross-dossier
-        
     }
 }
-
 
 fn create_default_folder(parent: &std::path::Path, app: &mut App) {
     let name = "Nouveau dossier";

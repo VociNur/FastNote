@@ -41,7 +41,27 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
                     egui::Stroke::new(1.5_f32, egui::Color32::from_rgb(255, 100, 100)),
                 );
             }
-
+            // chunks
+            let line_spacing = 1000.0 * zoom;
+            let start_y = rect.min.y - (offset.y * zoom / ui.pixels_per_point()) % line_spacing;
+            let mut y = start_y;
+            while y < rect.max.y {
+                painter.line_segment(
+                    [egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)],
+                    egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0, 255, 0)),
+                );
+                y += line_spacing / ui.pixels_per_point();
+            }
+            let line_spacing = 2000.0 * zoom;
+            let start_x = rect.min.x - (offset.x * zoom / ui.pixels_per_point()) % line_spacing;
+            let mut x = start_x;
+            while x < rect.max.x {
+                painter.line_segment(
+                    [egui::pos2(x, rect.min.y), egui::pos2(x, y)],
+                    egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0, 255, 0)),
+                );
+                x += line_spacing / ui.pixels_per_point();
+            }
             draw_gpu(ui, app, rect);
             // -------------- DEBUG -----------
 

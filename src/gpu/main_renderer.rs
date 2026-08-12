@@ -7,7 +7,7 @@ use egui_wgpu::wgpu;
 
 use crate::{
     gpu::main_gpu::{GpuPoint, Vertex},
-    gpuview::GpuView,
+    gpu::gpuview::GpuView,
 };
 
 #[repr(C)]

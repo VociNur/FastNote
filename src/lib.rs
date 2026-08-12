@@ -6,24 +6,19 @@ use eframe::egui::{self, Color32};
 
 // use egui::Color32;
 pub mod app;
-pub mod color_palette;
 pub mod edition;
 pub mod file_tree_state;
 pub mod gpu;
-pub mod gpuview;
 pub mod icons;
-pub mod input_manager;
 pub mod paths;
 pub mod pen;
 pub mod projects;
 pub mod state;
-pub mod stroke_simplifier;
 pub mod strokes;
 pub mod stylet;
 pub mod themes;
-pub mod tree_order;
 pub mod ui;
-
+mod event_managers;
 fn get_working_path() -> std::path::PathBuf {
     dirs::data_dir().unwrap_or_else(|| std::path::PathBuf::from("."))
 }

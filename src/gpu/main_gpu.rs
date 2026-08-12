@@ -89,6 +89,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             _pad3: 0,
         });
         nbr_point_current_stroke += 1;
+        println!("point cur: {}", p.pos);
     }
     if redraw_finished {
         app.nbr_redraw += 1;

@@ -4,21 +4,18 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::icons::Icons;
+use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::stylet::stylet_inputs::spawn_pen_thread;
 use crate::stylet::stylet_manager::StyletManager;
 use crate::ui::ui::draw_gui;
-use crate::{
-    edition::open_edition_mode, input_manager::InputManager, projects::user_file::UserFile,
-    state::State,
-};
+use crate::{edition::open_edition_mode, projects::user_file::UserFile, state::State};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
     pub app_have_focus: bool,
     pub state: State,
     pub icons: Icons,
-    pub input_manager: InputManager,
+    pub input_manager: FingerManager,
     pub stylet_manager: StyletManager,
     pub gpu_rect: Option<Rect>,
     pub x_screen_size: u32,
@@ -63,7 +60,7 @@ impl App {
             gpu_rect: None,
             window_state: Arc::new(Mutex::new(WindowState::default())),
             stylet_manager: StyletManager::default(),
-            input_manager: InputManager::default(),
+            input_manager: FingerManager::default(),
             x_screen_size: 1,
             y_screen_size: 1,
             // last_pen_state: None,

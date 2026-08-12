@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{get_working_path, load_persistent_data, paths::COLOR_PALETTE, pen::Pen, save_persistent_data};
+use crate::{get_working_path, load_persistent_data, paths::COLOR_PALETTE, pen::pen::{self, Pen}, save_persistent_data};
 
 
 

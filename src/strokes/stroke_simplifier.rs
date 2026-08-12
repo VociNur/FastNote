@@ -1,6 +1,7 @@
 use eframe::egui::Pos2;
 
-use crate::strokes::{PenStroke, StrokePoint};
+use crate::strokes::strokes::{PenStroke, StrokePoint};
+
 
 pub fn simplify_stroke_rdp(stroke: &mut PenStroke, epsilon: f32) {
     if stroke.points.len() <= 4 {

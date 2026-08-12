@@ -3,13 +3,14 @@ use std::path::PathBuf;
 use eframe::egui::{self};
 use serde::{Deserialize, Serialize};
 
+use crate::pen::pen::Pen;
 use crate::{
     load_persistent_data,
-    pen::Pen,
     save_persistent_data,
-    stroke_simplifier::simplify_stroke_rdp,
-    strokes::{PenStroke, StrokePoint},
+    strokes::stroke_simplifier::simplify_stroke_rdp,
 };
+use crate::strokes::strokes::StrokePoint;
+use crate::strokes::strokes::PenStroke;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

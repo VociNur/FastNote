@@ -18,11 +18,11 @@ impl Default for UserInputs {
     }
 }
 
-pub struct InputManager {
+pub struct FingerManager {
     pub user_inputs: UserInputs,
 }
 
-impl Default for InputManager {
+impl Default for FingerManager {
     fn default() -> Self {
         Self {
             user_inputs: UserInputs::default(),
@@ -30,7 +30,7 @@ impl Default for InputManager {
     }
 }
 
-impl InputManager {
+impl FingerManager {
     pub fn manage_events(self: &mut Self, state: &mut State, event: Event, ppp: f32) {
         match event {
             egui::Event::Touch {
