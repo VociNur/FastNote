@@ -64,6 +64,7 @@ impl StyletManager {
                     self.stylet.tool_type = button_event_state.tool_type;
                 }
             }
+
         }
     }
     pub fn touch_gpu(

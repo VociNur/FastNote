@@ -209,6 +209,8 @@ impl eframe::App for App {
                 println!("zero");
                 egui::Pos2::ZERO
             });
+        println!("window_pos: {:?}", window_pos);
+        println!("ctx rect. {:?}", ctx.available_rect());
         // let ppp = ctx.pixels_per_point();
 
         {

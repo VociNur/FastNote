@@ -715,6 +715,6 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         if !self.current_points.is_empty() {
             renderer.render_current(pass);
         }
-        renderer.render_debug(pass);
+        // renderer.render_debug(pass);
     }
 }
