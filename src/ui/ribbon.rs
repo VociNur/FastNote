@@ -1,5 +1,4 @@
 use eframe::egui;
-use egui::Button;
 
 use crate::{app::App, state::MenuMode};
 

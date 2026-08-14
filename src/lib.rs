@@ -6,7 +6,9 @@ use eframe::egui::{self, Color32};
 
 // use egui::Color32;
 pub mod app;
+pub mod errors;
 pub mod edition;
+pub mod event_managers;
 pub mod file_tree_state;
 pub mod gpu;
 pub mod icons;
@@ -17,8 +19,8 @@ pub mod state;
 pub mod strokes;
 pub mod stylet;
 pub mod themes;
+pub mod tree;
 pub mod ui;
-mod event_managers;
 fn get_working_path() -> std::path::PathBuf {
     dirs::data_dir().unwrap_or_else(|| std::path::PathBuf::from("."))
 }
@@ -43,9 +45,9 @@ fn save_persistent_data(path: PathBuf, json: &str) {
     }
 }
 
-fn has_persisent_data(path: PathBuf) -> bool {
-    path.exists()
-}
+// fn has_persisent_data(path: PathBuf) -> bool {
+//     path.exists()
+// }
 
 fn load_persistent_data(path: PathBuf) -> anyhow::Result<String> {
     if path.exists() {
@@ -68,6 +70,19 @@ fn distance_point_to_segment(p: egui::Pos2, a: egui::Pos2, b: egui::Pos2) -> f32
 fn color_to_rgb(color: &Color32) -> u32 {
     ((color.r() as u32) << 24) + ((color.g() as u32) << 16) + ((color.b() as u32) << 8) + 255
 }
-fn distance_sq(a: egui::Pos2, b:egui::Pos2) -> f32{
+fn distance_sq(a: egui::Pos2, b: egui::Pos2) -> f32 {
     a.distance_sq(b)
+}
+pub fn is_valid_folder_name(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+
+    // Interdits sur Windows + Linux
+    let forbidden = ['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
+
+    !name.chars().any(|c| forbidden.contains(&c))
+}
+pub fn folder_exists(parent: &PathBuf, name: &str) -> bool {
+    parent.join(name).exists()
 }

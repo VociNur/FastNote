@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     edition::open_edition_mode,
-    file_tree_state::FileTreeState,
     gpu::gpuview::GpuView,
     pen::color_palette::ColorPalette,
     projects::{opened_projects::OpenedProjectsManager, user_file::UserFile},
     themes::ThemeData,
-    ui::create_project_modal_window::NewProjectDialog,
+    ui::modal_windows::modal_window::ModalWindow,
 };
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
@@ -46,12 +45,12 @@ pub struct State {
     pub theme: ThemeData,
 
     //File
-    pub new_project_dialog: NewProjectDialog,
+    pub modal_window: ModalWindow,
     pub opened_projects: OpenedProjectsManager,
     pub current_file: Option<UserFile>,
 
     //Menu
-    pub file_tree: FileTreeState,
+    // pub file_tree: FileTreeState,
 
     // pub pen: Pen,
     pub cursor_icon: egui::CursorIcon,
@@ -68,8 +67,8 @@ impl Default for State {
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
             color_palette: color_palette,
-            file_tree: FileTreeState::default(),
-            new_project_dialog: NewProjectDialog::default(),
+            // file_tree: FileTreeState::default(),
+            modal_window: ModalWindow::None,
             cursor_icon: egui::CursorIcon::Default,
             opened_projects: OpenedProjectsManager::default(),
             current_file: None,

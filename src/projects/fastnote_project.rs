@@ -1,0 +1,279 @@
+use std::path::PathBuf;
+
+use anyhow::Result;
+use eframe::egui;
+use egui::Color32;
+use serde::{Deserialize, Serialize};
+
+use crate::{load_persistent_data, save_persistent_data};
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum ItemType {
+    Project,
+    Folder,
+    File,
+    Page,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Manifest {
+    pub r#type: ItemType,
+    pub name: String,
+    pub color: egui::Color32,
+}
+
+#[derive(Debug, Clone)]
+pub enum FolderEntry {
+    Folder(FastnoteFolder),
+    File(FastnoteFile),
+}
+
+#[derive(Debug, Clone)]
+pub struct FastnoteProject {
+    pub path: PathBuf,
+    pub manifest: Manifest,
+    pub children: Vec<FolderEntry>,
+    pub is_open: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct FastnoteFolder {
+    pub path: PathBuf,
+    pub manifest: Manifest,
+    pub children: Vec<FolderEntry>,
+    pub is_open: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct FastnoteFile {
+    pub path: PathBuf,
+    pub manifest: Manifest,
+    pub children: Vec<FastnotePage>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FastnotePage {
+    pub path: PathBuf,
+    pub manifest: Manifest,
+}
+
+impl FastnoteProject {
+    pub fn save(&self) -> anyhow::Result<()> {
+        let manifest_path = self.path.join("manifest.json");
+        let json = serde_json::to_string_pretty(&self.manifest)?;
+        save_persistent_data(manifest_path, &json);
+        Ok(())
+    }
+
+    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> anyhow::Result<Self> {
+        std::fs::create_dir_all(&path)?;
+
+        let manifest = Manifest {
+            r#type: ItemType::Project,
+            name,
+            color,
+        };
+
+        let project = Self {
+            path,
+            manifest,
+            children: vec![],
+            is_open: false,
+        };
+        project.save()?;
+        Ok(project)
+    }
+
+    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+        let manifest_path = path.join("manifest.json");
+        let json = load_persistent_data(manifest_path)?;
+        let manifest: Manifest = serde_json::from_str(&json)?;
+        let mut children = vec![];
+        // Parcourir les entrées du dossier
+        for entry in std::fs::read_dir(&path)? {
+            let entry = entry?;
+            let child_path = entry.path();
+
+            // On ne charge que les dossiers contenant un manifest.json
+            if child_path.is_dir() && child_path.join("manifest.json").exists() {
+                children.push(FolderEntry::load(child_path)?);
+            }
+        }
+
+        Ok(Self {
+            path,
+            manifest,
+            children,
+            is_open: false,
+        })
+    }
+
+    pub fn get_name(&self) -> String {
+        self.manifest.name.clone()
+    }
+    pub fn get_color(&self) -> Color32 {
+        self.manifest.color
+    }
+
+    pub fn set_name(&mut self, name: String) -> Result<()> {
+        self.manifest.name = name;
+        self.save()
+    }
+
+    pub fn set_color(&mut self, color: Color32) -> Result<()> {
+        self.manifest.color = color;
+        self.save()
+    }
+}
+impl FastnoteFolder {
+    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+        let manifest_path = path.join("manifest.json");
+        let json = load_persistent_data(manifest_path)?;
+        let manifest: Manifest = serde_json::from_str(&json)?;
+
+        let mut children = vec![];
+
+        for entry in std::fs::read_dir(&path)? {
+            let entry = entry?;
+            let child_path = entry.path();
+
+            if child_path.is_dir() && child_path.join("manifest.json").exists() {
+                children.push(FolderEntry::load(child_path)?);
+            }
+        }
+
+        Ok(Self {
+            path,
+            manifest,
+            children,
+            is_open: false,
+        })
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let manifest_path = self.path.join("manifest.json");
+        let json = serde_json::to_string_pretty(&self.manifest)?;
+        save_persistent_data(manifest_path, &json);
+        Ok(())
+    }
+
+    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> Result<Self> {
+        std::fs::create_dir_all(&path)?;
+
+        let manifest = Manifest {
+            r#type: ItemType::Folder,
+            name,
+            color,
+        };
+
+        let folder = Self {
+            path,
+            manifest,
+            children: vec![],
+            is_open: false,
+        };
+        folder.save()?;
+        Ok(folder)
+    }
+}
+
+impl FastnoteFile {
+    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+        let manifest_path = path.join("manifest.json");
+        let json = load_persistent_data(manifest_path)?;
+        let manifest: Manifest = serde_json::from_str(&json)?;
+
+        let mut children = vec![];
+
+        for entry in std::fs::read_dir(&path)? {
+            let entry = entry?;
+            let child_path = entry.path();
+
+            // Une page = fichier .fn + manifest .json
+            if child_path.is_file() && child_path.extension().map(|e| e == "fn").unwrap_or(false) {
+                children.push(FastnotePage::load(child_path)?);
+            }
+        }
+
+        Ok(Self {
+            path,
+            manifest,
+            children,
+        })
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let manifest_path = self.path.join("manifest.json");
+        println!(
+            "save path {:?}, manifest path {:?}",
+            self.path, manifest_path
+        );
+        let json = serde_json::to_string_pretty(&self.manifest)?;
+        save_persistent_data(manifest_path, &json);
+        Ok(())
+    }
+
+    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> Result<Self> {
+        std::fs::create_dir_all(&path)?;
+
+        let manifest = Manifest {
+            r#type: ItemType::File,
+            name,
+            color,
+        };
+
+        let file = Self {
+            path,
+            manifest,
+            children: vec![],
+        };
+        file.save()?;
+        Ok(file)
+    }
+}
+
+impl FastnotePage {
+    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+        // page.fn → page.json
+        let manifest_path = path.with_extension("json");
+        let json = load_persistent_data(manifest_path)?;
+        let manifest: Manifest = serde_json::from_str(&json)?;
+
+        Ok(Self { path, manifest })
+    }
+    pub fn save(&self) -> Result<()> {
+        let manifest_path = self.path.with_extension("json");
+        let json = serde_json::to_string_pretty(&self.manifest)?;
+        save_persistent_data(manifest_path, &json);
+        Ok(())
+    }
+
+    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> Result<Self> {
+        let manifest = Manifest {
+            r#type: ItemType::Page,
+            name,
+            color,
+        };
+
+        let page = Self { path, manifest };
+        page.save()?; // ✅ on utilise save()
+        Ok(page)
+    }
+}
+
+impl FolderEntry {
+    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+        // Charger le manifest du dossier/fichier
+        let manifest_path = path.join("manifest.json");
+        let json = load_persistent_data(manifest_path)?;
+        let manifest: Manifest = serde_json::from_str(&json)?;
+
+        match manifest.r#type {
+            ItemType::Folder => Ok(FolderEntry::Folder(FastnoteFolder::load(path)?)),
+            ItemType::File => Ok(FolderEntry::File(FastnoteFile::load(path)?)),
+            _ => Err(anyhow::anyhow!(
+                "FolderEntry::load: type {:?} invalide pour un enfant",
+                manifest.r#type
+            )),
+        }
+    }
+}

@@ -25,11 +25,6 @@ impl UserProject {
         s
     }
 
-    //     pub fn from_path(path: PathBuf){
-    //         //path here is a folder !
-    //         //
-    //         // load_persistent_data(path)
-    //     }
     pub fn save(&self) -> anyhow::Result<()>{
 
         let json = serde_json::to_string_pretty(self)?;

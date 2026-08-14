@@ -1,7 +1,7 @@
-use FastNote::gpu::main_renderer::MainRenderer;
 use eframe::egui;
-use FastNote::app::App;
-use FastNote::icons::Icons;
+use fast_note::app::App;
+use fast_note::gpu::main_renderer::MainRenderer;
+use fast_note::icons::Icons;
 
 fn main() -> eframe::Result {
     env_logger::init();
@@ -38,7 +38,12 @@ fn main() -> eframe::Result {
 
             // Initialise le renderer GPU
             let wgpu_state = cc.wgpu_render_state.as_ref().unwrap();
-            let renderer = MainRenderer::new(&wgpu_state.device, wgpu_state.target_format, width as u32, height as u32);
+            let renderer = MainRenderer::new(
+                &wgpu_state.device,
+                wgpu_state.target_format,
+                width as u32,
+                height as u32,
+            );
             wgpu_state
                 .renderer
                 .write()

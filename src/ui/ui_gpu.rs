@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32};
+use eframe::egui;
 
 use crate::{app::App, gpu::main_gpu::draw_gpu};
 fn rect_points_to_pixels(rect_points: egui::Rect, ppp: f32) -> egui::Rect {

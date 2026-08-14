@@ -1,5 +1,5 @@
 [package]
-name = "FastNote"
+name = "fast_note"
 version = "0.1.0"
 authors = ["Jules Chabod"]
 edition = "2024"

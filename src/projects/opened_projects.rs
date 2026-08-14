@@ -1,18 +1,17 @@
 use std::path::PathBuf;
 
 use eframe::egui::Color32;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     get_working_path, load_persistent_data,
-    paths::{MAIN_DATA, OPENED_PROJECTS_FILE},
-    projects::user_project::UserProject, save_persistent_data,
+    paths::OPENED_PROJECTS_FILE,
+    projects::fastnote_project::FastnoteProject,
+    save_persistent_data,
 };
 
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Clone)]
 pub struct OpenedProjectsManager {
-    pub projects: Vec<UserProject>,
+    pub projects: Vec<FastnoteProject>,
 }
 
 impl Default for OpenedProjectsManager {
@@ -23,29 +22,36 @@ impl Default for OpenedProjectsManager {
             s
         } else {
             println!("Unable to load default opened projects");
-            OpenedProjectsManager::new(vec![])
+            OpenedProjectsManager::new_blank()
         }
     }
 }
 
 impl OpenedProjectsManager {
-    pub fn create_blank_project(self: &mut Self, path: PathBuf, name: String, color: Color32) {
+    pub fn create_blank_project(
+        self: &mut Self,
+        path: PathBuf,
+        name: String,
+        color: Color32,
+    ) -> anyhow::Result<()> {
         self.projects
-            .push(UserProject::create_blank_project(path, name, color));
-        self.save_opened_project_manager();
-    }
-
-    pub fn load_user_project_from_path(self: &mut Self, path: PathBuf) -> anyhow::Result<()> {
-        let path_main = path.join(MAIN_DATA);
-        let json = load_persistent_data(path_main)?;
-        let mut cast: UserProject = serde_json::from_str(&json)?;
-        cast.path = path;
-        self.projects.push(cast);
+            .push(FastnoteProject::create_blank(path, name, color)?);
         self.save_opened_project_manager();
         Ok(())
     }
-    pub fn unload_user_project_from_path(self: &mut Self, path: PathBuf){
-        self.projects.retain(|f| f.path.canonicalize().is_ok() && path.canonicalize().is_ok() && f.path.canonicalize().unwrap() != path.canonicalize().unwrap());
+
+    pub fn load_fastnote_project(self: &mut Self, path: PathBuf) -> anyhow::Result<()> {
+        let project = FastnoteProject::load(path)?;
+        self.projects.push(project);
+        self.save_opened_project_manager();
+        Ok(())
+    }
+    pub fn unload_fastnote_project_from_path(self: &mut Self, path: PathBuf) {
+        self.projects.retain(|f| {
+            f.path.canonicalize().is_ok()
+                && path.canonicalize().is_ok()
+                && f.path.canonicalize().unwrap() != path.canonicalize().unwrap()
+        });
         self.save_opened_project_manager();
     }
 
@@ -57,16 +63,20 @@ impl OpenedProjectsManager {
         let cast: Vec<PathBuf> = serde_json::from_str(&json)?;
         // println!("cast");
         for path in cast {
-            self.load_user_project_from_path(path)?;
+            self.load_fastnote_project(path)?;
         }
         Ok(())
     }
 
     pub fn save_opened_project_manager(&mut self) {
         let path_opened_projects_data = get_working_path().join(OPENED_PROJECTS_FILE);
-        let data : Vec<PathBuf> = self.projects.iter().map(|p| p.path.clone()).collect::<Vec<PathBuf>>();
+        let data: Vec<PathBuf> = self
+            .projects
+            .iter()
+            .map(|p| p.path.clone())
+            .collect::<Vec<PathBuf>>();
         let res_json = serde_json::to_string_pretty(&data);
-        if res_json.is_err(){
+        if res_json.is_err() {
             println!("[OpenedProject->Save] Could not cast to json");
             return;
         }
@@ -74,7 +84,7 @@ impl OpenedProjectsManager {
         save_persistent_data(path_opened_projects_data, &json);
     }
 
-    pub fn new(projects: Vec<UserProject>) -> Self {
-        Self { projects }
+    pub fn new_blank() -> Self {
+        Self { projects: vec![] }
     }
 }

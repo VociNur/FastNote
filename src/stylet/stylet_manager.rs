@@ -23,7 +23,7 @@ impl StyletManager {
         self: &mut Self,
         ctx: &Context,
         state: &mut State,
-        has_focus: &bool,
+        _has_focus: &bool,
         gpu_rect: &Option<Rect>,
     ) {
         let events = std::mem::take(&mut *self.events.lock().unwrap());
@@ -165,11 +165,11 @@ impl StyletManager {
         }
     }
 
-    pub fn on_proximity_event(self: &mut Self, proximity_event_state: &ProximityEventState) {
+    pub fn on_proximity_event(self: &mut Self, _proximity_event_state: &ProximityEventState) {
         // println!("proximity: {proximity_event_state:?}");
     }
 
-    pub fn on_button_event(self: &mut Self, button_event_state: &ButtonEventState) {
+    pub fn on_button_event(self: &mut Self, _button_event_state: &ButtonEventState) {
         // println!("button: {button_event_state:?}");
     }
 }
@@ -279,16 +279,16 @@ impl ProximityEventState {
 
 #[derive(Debug)]
 pub struct ButtonEventState {
-    button: u32,
-    button_state: ButtonState,
+    _button: u32,
+    _button_state: ButtonState,
     tool_type: TabletToolType,
 }
 
 impl ButtonEventState {
-    pub fn new(button: u32, button_state: ButtonState, tool_type: TabletToolType) -> Self {
+    pub fn new(_button: u32, _button_state: ButtonState, tool_type: TabletToolType) -> Self {
         Self {
-            button,
-            button_state,
+            _button,
+            _button_state,
             tool_type,
         }
     }

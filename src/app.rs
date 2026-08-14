@@ -2,13 +2,17 @@ use eframe::egui::{self, Pos2, Rect};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
-use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
-use crate::stylet::stylet_inputs::spawn_pen_thread;
-use crate::stylet::stylet_manager::StyletManager;
-use crate::ui::ui::draw_gui;
 use crate::{edition::open_edition_mode, projects::user_file::UserFile, state::State};
+use crate::{errors::DisplayError, ui::ui::draw_gui};
+use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
+use crate::{
+    stylet::stylet_inputs::spawn_pen_thread,
+    ui::modal_windows::create_project_modal_window::NewProjectModalWindow,
+};
+use crate::{stylet::stylet_manager::StyletManager, ui::ui::draw_error_banner};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
@@ -27,6 +31,7 @@ pub struct App {
 
     pub debug_info: DebugInfo,
     pub nbr_redraw: u32,
+    pub errors: Vec<DisplayError>,
 }
 impl DebugInfo {
     pub fn push(&mut self, msg: impl Into<String>) {
@@ -68,6 +73,7 @@ impl App {
             ppp: 1.,
             debug_info: DebugInfo::default(),
             nbr_redraw: 0,
+            errors: vec![],
         }
     }
     // Called once before the first frame.
@@ -88,35 +94,35 @@ impl App {
     }
 
     pub fn user_opened_project(&mut self, path: PathBuf) {
-        // self.state.opened_projects.push(UserProject::new(path.file_stem().and_then(|s| s.to_str()).unwrap_or("Unnamed").to_owned(), path.clone(), Color32::BLACK));
-
-        // println!("Opened {:?}", path);
-        // let result = self.save_opened_projects();
-        // if result.is_err(){
-        //     println!("failed to save");
-        // }
         println!("Opened");
         println!("path: {:?}", path);
         let res = self
             .state
             .opened_projects
-            .load_user_project_from_path(path.clone());
-        if res.is_err() {
+            .load_fastnote_project(path.clone());
+        if let Err(err) = res {
             println!("Not able to load path ! {:?}", path);
+            // self.push_minute_error(ui, message);
+            self.push_unsafe_minute_error(format!(
+                "Not able to load path {:?} because of {:?}",
+                path, err
+            ));
         }
     }
 
-    pub fn user_created_project(&mut self) {
-        let dialog = &self.state.new_project_dialog;
-        println!("Created");
-        println!("name: {}", dialog.name);
-        println!("color: {:?}", dialog.color);
-        println!("path: {:?}", dialog.path);
-        self.state.opened_projects.create_blank_project(
+    pub fn user_created_project(&mut self, new_project_modal_window: &NewProjectModalWindow) {
+        let dialog = new_project_modal_window;
+
+        // println!("Created");
+        // println!("name: {}", dialog.name);
+        // println!("color: {:?}", dialog.color);
+        // println!("path: {:?}", dialog.path);
+        let err = self.state.opened_projects.create_blank_project(
             dialog.path.clone().join(dialog.name.clone()),
             dialog.name.clone(),
             dialog.color,
         );
+        println!("{:?}", err);
     }
 
     pub fn save_state(&mut self) -> anyhow::Result<()> {
@@ -151,13 +157,13 @@ impl App {
         self.stylet_manager
             .manage_events(ctx, &mut self.state, &has_focus, &self.gpu_rect);
         // println!("has focus{}", has_focus);
-        if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
-            println!("Save state");
-        }
-        if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
-            println!("Load state");
-        }
-        if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
+        // if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
+        //     println!("Save state");
+        // }
+        // if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
+        //     println!("Load state");
+        // }
+        // if ctx.input(|i| i.key_pressed(egui::Key::P) && i.modifiers.ctrl) {}
         // let window_pos = ctx
         //     .input(|i| i.viewport().outer_rect)
         //     .map(|r| r.min)
@@ -181,6 +187,34 @@ impl App {
                     .manage_events(&mut self.state, event.clone(), self.ppp);
             }
         });
+    }
+    pub fn reload_current_project(&mut self) {}
+
+    /// Ajoute une erreur qui dure X secondes
+    pub fn push_error(&mut self, ui: &egui::Ui, message: impl Into<String>, seconds: f64) {
+        self.errors
+            .push(DisplayError::new(message, Duration::from_secs_f64(seconds)));
+        ui.request_repaint_after_secs(seconds as f32);
+    }
+
+    pub fn push_instant_error(&mut self, message: impl Into<String>) {
+        self.errors
+            .push(DisplayError::new(message, Duration::from_secs_f64(0.)));
+    }
+    pub fn push_minute_error(&mut self, ui: &egui::Ui, message: impl Into<String>) {
+        self.errors
+            .push(DisplayError::new(message, Duration::from_secs_f64(60.)));
+        ui.request_repaint_after_secs(60.);
+    }
+
+    pub fn push_unsafe_minute_error(&mut self, message: impl Into<String>) {
+        self.errors
+            .push(DisplayError::new(message, Duration::from_secs_f64(60.)));
+    }
+
+    /// Nettoie les erreurs expirées
+    pub fn cleanup_errors(&mut self) {
+        self.errors.retain(|e| e.is_active());
     }
 }
 
@@ -208,6 +242,18 @@ impl eframe::App for App {
                 &mut self.state.edition_open,
             );
         }
+
+        //Error
+        // I’m not sure about how timed errors would act.
+        let cpy = std::mem::take(&mut self.errors);
+        for (j, error) in cpy.into_iter().enumerate() {
+            draw_error_banner(ui, &error.message, j);
+            if error.is_active() {
+                self.errors.push(error);
+            }
+        }
+
+        //Debug
         self.ppp = ui.pixels_per_point();
         egui::Window::new("Debug Panel")
             .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-10.0, 10.0))

@@ -81,7 +81,7 @@ impl FingerManager {
         self.user_inputs.fingers.len()
     }
 
-    pub fn on_finger_start(self: &mut Self, state: &mut State, finger: &mut Finger) {}
+    pub fn on_finger_start(self: &mut Self, _state: &mut State, _finger: &mut Finger) {}
 
     pub fn on_finger_move(
         self: &mut Self,
@@ -114,7 +114,12 @@ impl FingerManager {
         }
     }
 
-    pub fn on_finger_end(self: &mut Self, state: &mut State, last_finger: &Finger, end_pos: Pos2) {
+    pub fn on_finger_end(
+        self: &mut Self,
+        _state: &mut State,
+        _last_finger: &Finger,
+        _end_pos: Pos2,
+    ) {
         // state.gpu_view.top_left = Pos2 { x: 0f32, y: 0f32 };
         // println!("Actual zoom: {}", state.gpu_view.zoom);
     }
