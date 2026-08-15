@@ -6,8 +6,8 @@ use eframe::egui::{self, Color32};
 
 // use egui::Color32;
 pub mod app;
-pub mod errors;
 pub mod edition;
+pub mod errors;
 pub mod event_managers;
 pub mod file_tree_state;
 pub mod gpu;
@@ -51,8 +51,13 @@ fn save_persistent_data(path: PathBuf, json: &str) {
 
 fn load_persistent_data(path: PathBuf) -> anyhow::Result<String> {
     if path.exists() {
-        let json = std::fs::read_to_string(path).unwrap_or_default();
-        Ok(json)
+        if path.is_file() {
+            let json = std::fs::read_to_string(path).unwrap_or_default();
+            Ok(json)
+        } else {
+            println!("Error: try to open a folder");
+            Err(anyhow::anyhow!("Try to open a folder"))
+        }
     } else {
         println!("Opening data that doesn't exist");
         println!("File {:?}", path);

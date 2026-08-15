@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use eframe::egui;
+use eframe::egui::{self, Color32};
 
 use crate::{
-    app::App, folder_exists, is_valid_folder_name, ui::modal_windows::modal_window::ModalWindow,
+    app::App, folder_exists, is_valid_folder_name, projects::fastnote_project::FastnoteFolder,
+    ui::modal_windows::modal_window::ModalWindow,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -63,6 +64,23 @@ pub fn draw_new_folder_modal_window(
 
                 std::fs::create_dir_all(&folder_path).ok();
 
+                // Création manifest
+                let folder_response = FastnoteFolder::create_blank(
+                    folder_path,
+                    modal.folder_name.clone(),
+                    Color32::BLUE,
+                );
+                match folder_response {
+                    Ok(file) => {
+                        let save_response = file.save();
+                        if let Err(err) = save_response {
+                            app.push_instant_error(err.to_string());
+                        }
+                    }
+                    Err(err) => {
+                        app.push_instant_error(err.to_string());
+                    }
+                }
                 // Reload du projet
                 app.reload_current_project();
 

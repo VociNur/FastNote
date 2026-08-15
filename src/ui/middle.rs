@@ -7,7 +7,9 @@ use crate::{
     get_working_path,
     paths::PROJECT_DEFAULT_FOLDER,
     // projects::tree_order::{save_order, sorted_entries},
-    projects::fastnote_project::{FastnoteFolder, FastnoteProject, FolderEntry, ItemType},
+    projects::fastnote_project::{
+        FastnoteFile, FastnoteFolder, FastnoteProject, FolderEntry, ItemType,
+    },
     state::MenuMode,
     ui::modal_windows::create_project_modal_window::NewProjectModalWindow,
 };
@@ -23,6 +25,14 @@ pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
                 _ => draw_home_menu_left(ui, app),
             }
         });
+    if app.state.get_menu() != MenuMode::File && !app.state.current_fastnote_file.is_none() {
+        egui::Panel::left("left_panel_secondary")
+            .resizable(true)
+            .show(ui, |ui| {
+                draw_page_menu_left(ui, app);
+            });
+    }
+    // Second panneau à gauche (comme OneNote)
 }
 
 //FILE
@@ -475,9 +485,11 @@ pub fn flatten_project(project: &FastnoteProject, out: &mut Vec<FlatNode>) {
         name: project.manifest.name.clone(),
         kind: ItemType::Project,
         depth: 0,
-        is_open: project.is_open,
+        is_open: project.manifest.is_open,
     });
-    flatten_folder_entries(&project.children, 1, out);
+    if project.manifest.is_open {
+        flatten_folder_entries(&project.children, 1, out);
+    }
 }
 
 fn flatten_folder_entries(entries: &Vec<FolderEntry>, depth: usize, out: &mut Vec<FlatNode>) {
@@ -489,9 +501,9 @@ fn flatten_folder_entries(entries: &Vec<FolderEntry>, depth: usize, out: &mut Ve
                     name: f.manifest.name.clone(),
                     kind: ItemType::Folder,
                     depth,
-                    is_open: f.is_open,
+                    is_open: f.manifest.is_open,
                 });
-                if f.is_open {
+                if f.manifest.is_open {
                     flatten_folder_entries(&f.children, depth + 1, out);
                 }
             }
@@ -513,14 +525,23 @@ pub fn toggle_item_open(app: &mut App, item: &FlatNode) {
     match item.kind {
         ItemType::Project => {
             if let Some(project) = find_project_mut(app, item.path.clone()) {
-                project.is_open = !project.is_open;
+                project.manifest.is_open = !project.manifest.is_open;
+                let response_save = project.save();
+                if let Err(err) = response_save {
+                    app.push_unsafe_minute_error(err.to_string());
+                }
             }
         }
         ItemType::Folder => {
             if let Some(folder) = find_folder_mut(app, item.path.clone()) {
-                folder.is_open = !folder.is_open;
+                folder.manifest.is_open = !folder.manifest.is_open;
+                let response_save = folder.save();
+                if let Err(err) = response_save {
+                    app.push_unsafe_minute_error(err.to_string());
+                }
             }
         }
+        ItemType::File => app.state.current_fastnote_file = Some(item.path.clone()),
         _ => {}
     }
 }
@@ -556,6 +577,31 @@ fn find_folder_rec(entries: &mut Vec<FolderEntry>, path: PathBuf) -> Option<&mut
     }
     None
 }
+fn find_file_mut(app: &mut App, path: PathBuf) -> Option<&mut FastnoteFile> {
+    for project in &mut app.state.opened_projects.projects {
+        if let Some(file) = find_file_rec(&mut project.children, path.clone()) {
+            return Some(file);
+        }
+    }
+    None
+}
+fn find_file_rec(entries: &mut Vec<FolderEntry>, path: PathBuf) -> Option<&mut FastnoteFile> {
+    for entry in entries {
+        match entry {
+            FolderEntry::File(f) => {
+                if f.path == path {
+                    return Some(f);
+                }
+            }
+            FolderEntry::Folder(folder) => {
+                if let Some(found) = find_file_rec(&mut folder.children, path.clone()) {
+                    return Some(found);
+                }
+            }
+        }
+    }
+    None
+}
 
 pub fn draw_tree(
     ui: &mut egui::Ui,
@@ -567,8 +613,30 @@ pub fn draw_tree(
             ui.add_space(item.depth as f32 * 20.0);
 
             if item.kind == ItemType::Project || item.kind == ItemType::Folder {
-                let project = find_project_mut(app, item.path.clone());
-                let arrow_icon = if project.map(|p| p.is_open).unwrap_or_else(|| false) {
+                let open = if item.kind == ItemType::Project {
+                    let project = find_project_mut(app, item.path.clone());
+                    if project.is_none() {
+                        app.push_minute_error(
+                            ui,
+                            format!("project is not find: {}", item.path.to_string_lossy()),
+                        );
+                        false
+                    } else {
+                        project.unwrap().manifest.is_open
+                    }
+                } else {
+                    let folder = find_folder_mut(app, item.path.clone());
+                    if folder.is_none() {
+                        app.push_minute_error(
+                            ui,
+                            format!("folder is not find: {}", item.path.to_string_lossy()),
+                        );
+                        false
+                    } else {
+                        folder.unwrap().manifest.is_open
+                    }
+                };
+                let arrow_icon = if open {
                     &app.icons.bold_down_arrow
                 } else {
                     &app.icons.bold_right_arrow
@@ -581,6 +649,8 @@ pub fn draw_tree(
                 if arrow_resp.clicked() {
                     toggle_item_open(app, item);
                 }
+            } else {
+                ui.add_space(16.);
             }
             handle.ui(ui, |ui| {
                 let label = egui::RichText::new(&item.name)
@@ -633,4 +703,77 @@ pub fn delete_fastnote(path: PathBuf, app: &mut App) {
     app.state.modal_window = super::modal_windows::modal_window::ModalWindow::NewFolder(
         super::modal_windows::new_folder_modal_window::NewFolderModalWindow::new(path),
     )
+}
+pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
+    // On récupère juste le path du fichier
+    let Some(path_file) = app.state.current_fastnote_file.clone() else {
+        return;
+    };
+
+    // On récupère le fichier (emprunt mutable court)
+    let Some(file) = find_file_mut(app, path_file.clone()) else {
+        app.push_minute_error(ui, "Could not load file for left page menu.");
+        return;
+    };
+
+    // --- 1) On clone les pages AVANT la closure ---
+    let mut pages: Vec<(PathBuf, String)> = file
+        .children
+        .iter()
+        .map(|entry| (entry.path.clone(), entry.manifest.name.clone()))
+        .collect();
+
+    ui.vertical(|ui| {
+        ui.heading("Pages");
+        ui.add_space(8.0);
+
+        // Bouton + Page (juste un print)
+        if ui.button("+ Page").clicked() {
+            println!("(DEBUG) Create page");
+        }
+
+        ui.separator();
+
+        // --- 2) DnD sur les pages clonées ---
+        let response = egui_dnd::dnd(ui, "pages_dnd").show_vec(
+            &mut pages,
+            |ui, (path, name), handle, _state| {
+                ui.horizontal(|ui| {
+                    handle.ui(ui, |ui| {
+                        let label = egui::RichText::new(name.clone())
+                            .size(18.0)
+                            .color(Color32::BLACK);
+
+                        let response = ui.add(egui::Label::new(label).sense(egui::Sense::click()));
+
+                        // Clic gauche → print
+                        if response.clicked() {
+                            println!("(DEBUG) Opening page: {}", name);
+                        }
+
+                        // Clic droit → print
+                        response.context_menu(|ui| {
+                            if ui.button("✏ Renommer").clicked() {
+                                println!("(DEBUG) Rename page: {}", name);
+                                ui.close();
+                            }
+
+                            if ui.button("🗑 Supprimer").clicked() {
+                                println!("(DEBUG) Delete page: {}", name);
+                                ui.close();
+                            }
+                        });
+                    });
+                });
+            },
+        );
+
+        // On peut print le résultat du DnD
+        if response.is_drag_finished() {
+            println!("(DEBUG) Pages reordered:");
+            for (i, (_, name)) in pages.iter().enumerate() {
+                println!("  {} → {}", i, name);
+            }
+        }
+    });
 }

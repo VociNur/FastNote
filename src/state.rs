@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use eframe::egui;
 use egui::Context;
 use serde::{Deserialize, Serialize};
@@ -6,7 +8,9 @@ use crate::{
     edition::open_edition_mode,
     gpu::gpuview::GpuView,
     pen::color_palette::ColorPalette,
-    projects::{opened_projects::OpenedProjectsManager, user_file::UserFile},
+    projects::{
+        fastnote_project::FastnoteFile, opened_projects::OpenedProjectsManager, user_file::UserFile,
+    },
     themes::ThemeData,
     ui::modal_windows::modal_window::ModalWindow,
 };
@@ -48,7 +52,8 @@ pub struct State {
     pub modal_window: ModalWindow,
     pub opened_projects: OpenedProjectsManager,
     pub current_file: Option<UserFile>,
-
+    pub current_fastnote_file: Option<PathBuf>,
+    pub current_fastnote_page: Option<PathBuf>,
     //Menu
     // pub file_tree: FileTreeState,
 
@@ -72,6 +77,8 @@ impl Default for State {
             cursor_icon: egui::CursorIcon::Default,
             opened_projects: OpenedProjectsManager::default(),
             current_file: None,
+            current_fastnote_file: None,
+            current_fastnote_page: None,
             edition_open: false,
             gpu_view: GpuView::default(),
         }

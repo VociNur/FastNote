@@ -188,7 +188,10 @@ impl App {
             }
         });
     }
-    pub fn reload_current_project(&mut self) {}
+    pub fn reload_current_project(&mut self) {
+        self.state.opened_projects =
+            crate::projects::opened_projects::OpenedProjectsManager::default();
+    }
 
     /// Ajoute une erreur qui dure X secondes
     pub fn push_error(&mut self, ui: &egui::Ui, message: impl Into<String>, seconds: f64) {

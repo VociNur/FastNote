@@ -19,6 +19,7 @@ pub struct Manifest {
     pub r#type: ItemType,
     pub name: String,
     pub color: egui::Color32,
+    pub is_open: bool, //osef pour un file/autre
 }
 
 #[derive(Debug, Clone)]
@@ -32,7 +33,6 @@ pub struct FastnoteProject {
     pub path: PathBuf,
     pub manifest: Manifest,
     pub children: Vec<FolderEntry>,
-    pub is_open: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +40,6 @@ pub struct FastnoteFolder {
     pub path: PathBuf,
     pub manifest: Manifest,
     pub children: Vec<FolderEntry>,
-    pub is_open: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -71,13 +70,13 @@ impl FastnoteProject {
             r#type: ItemType::Project,
             name,
             color,
+            is_open: true,
         };
 
         let project = Self {
             path,
             manifest,
             children: vec![],
-            is_open: false,
         };
         project.save()?;
         Ok(project)
@@ -103,7 +102,6 @@ impl FastnoteProject {
             path,
             manifest,
             children,
-            is_open: false,
         })
     }
 
@@ -145,7 +143,6 @@ impl FastnoteFolder {
             path,
             manifest,
             children,
-            is_open: false,
         })
     }
 
@@ -163,13 +160,13 @@ impl FastnoteFolder {
             r#type: ItemType::Folder,
             name,
             color,
+            is_open: true,
         };
 
         let folder = Self {
             path,
             manifest,
             children: vec![],
-            is_open: false,
         };
         folder.save()?;
         Ok(folder)
@@ -219,6 +216,7 @@ impl FastnoteFile {
             r#type: ItemType::File,
             name,
             color,
+            is_open: false,
         };
 
         let file = Self {
@@ -252,6 +250,7 @@ impl FastnotePage {
             r#type: ItemType::Page,
             name,
             color,
+            is_open: false,
         };
 
         let page = Self { path, manifest };
