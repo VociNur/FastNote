@@ -1,11 +1,11 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use eframe::egui;
 use egui::Color32;
 use serde::{Deserialize, Serialize};
 
-use crate::{load_persistent_data, save_persistent_data};
+use crate::{load_persistent_data, projects::fastnote_page::FastnotePage, save_persistent_data};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ItemType {
@@ -49,11 +49,6 @@ pub struct FastnoteFile {
     pub children: Vec<FastnotePage>,
 }
 
-#[derive(Debug, Clone)]
-pub struct FastnotePage {
-    pub path: PathBuf,
-    pub manifest: Manifest,
-}
 
 impl FastnoteProject {
     pub fn save(&self) -> anyhow::Result<()> {
@@ -180,17 +175,48 @@ impl FastnoteFile {
         let manifest: Manifest = serde_json::from_str(&json)?;
 
         let mut children = vec![];
-
+        // Parcourir les sous-dossiers du fichier
         for entry in std::fs::read_dir(&path)? {
             let entry = entry?;
             let child_path = entry.path();
+            // On ne charge que les dossiers contenant un manifest.json
+            if child_path.is_dir() && child_path.join("manifest.json").exists() {
+                // Lire le manifest du dossier enfant
+                let json = load_persistent_data(child_path.join("manifest.json"))?;
+                let child_manifest: Manifest = serde_json::from_str(&json)?;
 
-            // Une page = fichier .fn + manifest .json
-            if child_path.is_file() && child_path.extension().map(|e| e == "fn").unwrap_or(false) {
-                children.push(FastnotePage::load(child_path)?);
+                match child_manifest.r#type {
+                    ItemType::Page => {
+                        // Vérifier la structure obligatoire d'une Page
+                        let regions = child_path.join("regions");
+                        let assets = child_path.join("assets");
+
+                        if !regions.exists() || !assets.exists() {
+                            // Page corrompue → on ne la charge pas
+                            // (tu adapteras la méthode exacte si besoin)
+                            // app.push_unsafe_minute_error(format!(
+                            //     "Page {:?} was corrupted (missing regions/ or assets/)",
+                            //     child_path
+                            // ));
+                            println!(
+                                "Page {:?} was corrupted (missing regions/ or assets/)",
+                                child_path
+                            );
+                            continue;
+                        }
+
+                        // Charger la page
+                        let page = FastnotePage::load(child_path.clone())?;
+                        children.push(page);
+                    }
+
+                    other => {
+                        // Un File ne doit contenir que des Pages
+                        println!("File {:?} contains invalid child type {:?}", path, other);
+                    }
+                }
             }
         }
-
         Ok(Self {
             path,
             manifest,
@@ -229,35 +255,6 @@ impl FastnoteFile {
     }
 }
 
-impl FastnotePage {
-    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
-        // page.fn → page.json
-        let manifest_path = path.with_extension("json");
-        let json = load_persistent_data(manifest_path)?;
-        let manifest: Manifest = serde_json::from_str(&json)?;
-
-        Ok(Self { path, manifest })
-    }
-    pub fn save(&self) -> Result<()> {
-        let manifest_path = self.path.with_extension("json");
-        let json = serde_json::to_string_pretty(&self.manifest)?;
-        save_persistent_data(manifest_path, &json);
-        Ok(())
-    }
-
-    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> Result<Self> {
-        let manifest = Manifest {
-            r#type: ItemType::Page,
-            name,
-            color,
-            is_open: false,
-        };
-
-        let page = Self { path, manifest };
-        page.save()?; // ✅ on utilise save()
-        Ok(page)
-    }
-}
 
 impl FolderEntry {
     pub fn load(path: PathBuf) -> anyhow::Result<Self> {

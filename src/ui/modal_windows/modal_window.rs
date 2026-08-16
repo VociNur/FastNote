@@ -6,6 +6,7 @@ use crate::{
         create_project_modal_window::{draw_new_project_modal_window, NewProjectModalWindow},
         new_file_modal_window::{draw_new_file_modal_window, NewFileModalWindow},
         new_folder_modal_window::{draw_new_folder_modal_window, NewFolderModalWindow},
+        new_page_modal_window::{draw_new_page_modal_window, NewPageModalWindow},
         rename_modal_window::{draw_rename_modal_window, RenameModalWindow},
     },
 };
@@ -18,6 +19,7 @@ pub enum ModalWindow {
     NewFolder(NewFolderModalWindow),
     NewFile(NewFileModalWindow),
     Rename(RenameModalWindow),
+    NewPage(NewPageModalWindow),
 }
 
 impl ModalWindow {
@@ -60,6 +62,13 @@ pub fn draw_modal_window(ui: &egui::Ui, app: &mut App) {
             ui.painter()
                 .rect_filled(screen, 0.0, egui::Color32::from_black_alpha(50));
             draw_rename_modal_window(ui, app, modal);
+        }
+        ModalWindow::NewPage(ref mut modal) => {
+            let screen = ui.max_rect();
+
+            ui.painter()
+                .rect_filled(screen, 0.0, egui::Color32::from_black_alpha(50));
+            draw_new_page_modal_window(ui, app, modal);
         }
     }
     if app.state.modal_window == ModalWindow::Taken {

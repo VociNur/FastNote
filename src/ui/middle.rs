@@ -658,6 +658,11 @@ pub fn draw_tree(
                     .color(egui::Color32::BLACK);
 
                 let response = ui.add(egui::Label::new(label).sense(egui::Sense::click()));
+                if response.clicked() {
+                    if item.kind == ItemType::File {
+                        toggle_item_open(app, item);
+                    }
+                }
                 response.context_menu(|ui| {
                     if ui.button("📁 Nouveau dossier").clicked() {
                         create_fastnote_folder(item.path.clone(), app);
@@ -720,9 +725,19 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
     let mut pages: Vec<(PathBuf, String)> = file
         .children
         .iter()
-        .map(|entry| (entry.path.clone(), entry.manifest.name.clone()))
+        .map(|entry| {
+            (
+                entry.path.clone(),
+                entry
+                    .path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap()
+                    .to_owned(),
+            )
+        })
         .collect();
-
     ui.vertical(|ui| {
         ui.heading("Pages");
         ui.add_space(8.0);
@@ -730,6 +745,13 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
         // Bouton + Page (juste un print)
         if ui.button("+ Page").clicked() {
             println!("(DEBUG) Create page");
+            app.state.modal_window = crate::ui::modal_windows::modal_window::ModalWindow::NewPage(
+                crate::ui::modal_windows::new_page_modal_window::NewPageModalWindow {
+                    parent: app.state.current_fastnote_file.clone().unwrap(),
+                    folder_name: "".to_owned(),
+                    display_name: "".to_owned(),
+                },
+            )
         }
 
         ui.separator();
@@ -749,6 +771,7 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
                         // Clic gauche → print
                         if response.clicked() {
                             println!("(DEBUG) Opening page: {}", name);
+                            app.state.current_fastnote_page = Some(path.clone());
                         }
 
                         // Clic droit → print
