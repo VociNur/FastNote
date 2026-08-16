@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use eframe::egui;
@@ -48,7 +48,6 @@ pub struct FastnoteFile {
     pub manifest: Manifest,
     pub children: Vec<FastnotePage>,
 }
-
 
 impl FastnoteProject {
     pub fn save(&self) -> anyhow::Result<()> {
@@ -254,7 +253,6 @@ impl FastnoteFile {
         Ok(file)
     }
 }
-
 
 impl FolderEntry {
     pub fn load(path: PathBuf) -> anyhow::Result<Self> {

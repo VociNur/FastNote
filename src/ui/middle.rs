@@ -771,7 +771,8 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
                         // Clic gauche → print
                         if response.clicked() {
                             println!("(DEBUG) Opening page: {}", name);
-                            app.state.current_fastnote_page = Some(path.clone());
+                            // app.state.current_fastnote_page = Some(path.clone());
+                            app.open_page(path.clone());
                         }
 
                         // Clic droit → print

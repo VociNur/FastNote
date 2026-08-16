@@ -5,7 +5,11 @@ use std::{
     time::Duration,
 };
 
-use crate::{edition::open_edition_mode, projects::user_file::UserFile, state::State};
+use crate::{
+    edition::open_edition_mode,
+    projects::{loaded_page::LoadedPage, user_file::UserFile},
+    state::State,
+};
 use crate::{errors::DisplayError, ui::ui::draw_gui};
 use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::{
@@ -218,6 +222,10 @@ impl App {
     /// Nettoie les erreurs expirées
     pub fn cleanup_errors(&mut self) {
         self.errors.retain(|e| e.is_active());
+    }
+
+    pub fn open_page(&mut self, path: PathBuf) {
+        self.state.loaded_page = Some(LoadedPage::new(path));
     }
 }
 

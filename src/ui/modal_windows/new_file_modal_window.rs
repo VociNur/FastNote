@@ -1,13 +1,9 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use eframe::egui::{self, Color32};
 
 use crate::{
-    app::App,
-    folder_exists, is_valid_folder_name,
-    projects::fastnote_project::{FastnoteFile, ItemType, Manifest},
-    save_persistent_data,
-    ui::modal_windows::modal_window::ModalWindow,
+    app::App, folder_exists, is_valid_folder_name, projects::fastnote_project::FastnoteFile, ui::modal_windows::modal_window::ModalWindow,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
