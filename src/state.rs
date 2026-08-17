@@ -99,4 +99,14 @@ impl State {
     pub fn get_menu(&self) -> MenuMode {
         self.menu_mode
     }
+    pub fn save_visible_strokes(&mut self) {
+        let loaded_page_opt = self.loaded_page.take();
+        match loaded_page_opt {
+            None => {}
+            Some(mut loaded_page) => {
+                loaded_page.save_current_stroke(self);
+                self.loaded_page = Some(loaded_page);
+            }
+        }
+    }
 }

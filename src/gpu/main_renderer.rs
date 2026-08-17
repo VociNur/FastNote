@@ -6,8 +6,8 @@ use eframe::{
 use egui_wgpu::wgpu;
 
 use crate::{
-    gpu::main_gpu::{GpuPoint, Vertex},
     gpu::gpuview::GpuView,
+    gpu::main_gpu::{GpuPoint, Vertex},
 };
 
 #[repr(C)]
@@ -666,7 +666,7 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         resources: &mut egui_wgpu::CallbackResources,
     ) -> Vec<wgpu::CommandBuffer> {
         let renderer = resources.get_mut::<MainRenderer>().unwrap();
-            
+
         // 1. Uniforms
         let ppp = sd.pixels_per_point;
         queue.write_buffer(
@@ -691,7 +691,10 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         }
 
         // 3. Compute
-        renderer.dispatch_current_compute(encoder, 6 * self.subdivision * self.current_points.len() as u32 + self.subdivision);
+        renderer.dispatch_current_compute(
+            encoder,
+            6 * self.subdivision * self.current_points.len() as u32 + self.subdivision,
+        );
 
         if self.redraw_finished {
             renderer.dispatch_finished_compute(
@@ -716,6 +719,6 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         if !self.current_points.is_empty() {
             renderer.render_current(pass);
         }
-        // renderer.render_debug(pass);
+        renderer.render_debug(pass);
     }
 }

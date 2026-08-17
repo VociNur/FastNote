@@ -232,7 +232,7 @@ impl App {
 impl eframe::App for App {
     /// Called by the framework to save state before shutdown.
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
-        // eframe::set_value(storage, eframe::APP_KEY, self);
+        // eframe::set_value(storage, eframe::APP_KEY, self);.clone()
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.

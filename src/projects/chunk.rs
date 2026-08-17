@@ -30,6 +30,7 @@ impl Chunk {
             // Test précis seulement si bbox intersecte
             // if stroke.intersects_point(pos, radius) {
             //     stroke.deleted = true;
+            //
             //     // println!("Deleted one");
             // }
             if stroke.touch_point(pos, radius_sq) {

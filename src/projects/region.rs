@@ -49,19 +49,28 @@ impl RegionCache {
         self.regions.insert(key, region);
     }
 
-    pub fn save_region(&self, rx: i32, ry: i32) {
-        if let Some(region) = self.regions.get(&(rx, ry)) {
-            let region_path = self.regions_path.join(format!("region_{}_{}.bin", rx, ry));
-            let response = region.save(region_path);
-            if let Err(err) = response {
-                println!(
-                    "Could not save region: {:?} {} {} {:?}",
-                    self.regions_path, rx, ry, err
-                );
-            }
+    // pub fn save_region(&self, rx: i32, ry: i32) {
+    //     println!("saving region {:?} {} {}", self.regions_path, rx, ry);
+    //     if let Some(region) = self.regions.get(&(rx, ry)) {
+    //         let region_path = self.regions_path.join(format!("region_{}_{}.bin", rx, ry));
+    //         let response = region.save(region_path);
+    //         if let Err(err) = response {
+    //             println!(
+    //                 "Could not save region: {:?} {} {} {:?}",
+    //                 self.regions_path, rx, ry, err
+    //             );
+    //         }
+    //     }
+    // }
+
+    pub fn save_region(&mut self, rx: i32, ry: i32) {
+        let regions_path = self.regions_path.clone();
+        let region = self.get_ensure_loaded_region(rx, ry);
+        let res = region.save(regions_path.clone());
+        if res.is_err() {
+            println!("Erro r save region in region cache : {:?}", res.is_err());
         }
     }
-
     pub fn get_ensure_loaded_region_mut(&mut self, rx: i32, ry: i32) -> &mut LoadedRegion {
         self.ensure_region_loaded(rx, ry);
         self.regions.get_mut(&(rx, ry)).unwrap()

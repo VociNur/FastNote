@@ -39,7 +39,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     // app.state.current_file.as_mut().unwrap().redraw_finished = false;
     // if redraw_finished {
     for (_rx, _ry, _cx, _cy, chunk) in loaded_page.get_chunk(&top_left_pos) {
-        println!("draw r/c: {} {} {} {}", _rx, _ry, _cx, _cy);
+        // println!("draw r/c: {} {} {} {}", _rx, _ry, _cx, _cy);
         for stroke in &chunk.strokes {
             // if stroke.deleted {
             //     println!("stroke deleted");
@@ -85,7 +85,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             _pad3: 0,
         });
         nbr_point_current_stroke += 1;
-        println!("point cur: {}", p.pos);
+        // println!("point cur: {}", p.pos);
     }
     // if redraw_finished {
     //     app.nbr_redraw += 1;

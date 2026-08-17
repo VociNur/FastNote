@@ -162,10 +162,7 @@ impl StyletManager {
             // if leiit Some(file) = &mut state.current_file {
             //     file.save_current_stroke(&state.color_palette.pen);
             // }
-            let pen = state.color_palette.pen.clone();
-            if let Some(loaded_file) = &mut state.loaded_page{
-                loaded_file.save_current_stroke(&pen);
-            }
+            state.save_visible_strokes();
         }
     }
 
