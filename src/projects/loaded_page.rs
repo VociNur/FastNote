@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
+use eframe::egui::Pos2;
+
 use crate::{
-    app::App,
+    pen::pen::Pen,
     projects::{
         chunk::Chunk,
         region::{
@@ -9,7 +11,10 @@ use crate::{
             REGION_PIXEL_SIZE_X, REGION_PIXEL_SIZE_Y,
         },
     },
-    strokes::strokes::StrokePoint,
+    strokes::{
+        stroke_simplifier::simplify_stroke_rdp,
+        strokes::{PenStroke, StrokePoint},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -30,10 +35,11 @@ impl LoadedPage {
         }
     }
 
-    pub fn get_strokes(self: &mut Self, app: &App) -> Vec<(i32, i32, usize, usize, &Chunk)> {
+    pub fn get_chunk(
+        self: &mut Self,
+        top_left_pos: &Pos2,
+    ) -> Vec<(i32, i32, usize, usize, &Chunk)> {
         let mut out = Vec::new();
-
-        let top_left_pos = app.state.gpu_view.top_left;
 
         let pixel_x = top_left_pos.x;
         let pixel_y = top_left_pos.y;
@@ -76,5 +82,57 @@ impl LoadedPage {
         }
 
         out
+    }
+    pub fn add_stroke_point(&mut self, sp: StrokePoint) {
+        self.current_stroke.push(sp);
+    }
+    pub fn save_current_stroke(&mut self, pen: &Pen) {
+        let points = std::mem::take(&mut self.current_stroke);
+
+        if points.is_empty() {
+            return;
+        }
+
+        let mut stroke = PenStroke::new(pen.color, points, pen.size);
+
+        simplify_stroke_rdp(&mut stroke, 0.2);
+
+        self.distribute_stroke_into_chunks(stroke);
+
+        self.redraw_finished = true;
+    }
+
+    // ---------------------------------------------------------
+    // 4. Gomme locale au chunk
+    // ---------------------------------------------------------
+    pub fn erase_at(&mut self, pos: Pos2, radius: f32) {
+        println!("Would like to erase");
+
+        // Trouver région + chunk
+        let rx = (pos.x / REGION_PIXEL_SIZE_X).floor() as i32;
+        let ry = (pos.y / REGION_PIXEL_SIZE_Y).floor() as i32;
+
+        let local_x = pos.x - (rx as f32 * REGION_PIXEL_SIZE_X);
+        let local_y = pos.y - (ry as f32 * REGION_PIXEL_SIZE_Y);
+
+        let cx = (local_x / CHUNK_PIXEL_SIZE_X).floor() as usize;
+        let cy = (local_y / CHUNK_PIXEL_SIZE_Y).floor() as usize;
+
+        let chunk_index = cy * CHUNKS_PER_REGION_X + cx;
+
+        let region = self.regions.get_ensure_loaded_region_mut(rx, ry);
+        let chunk = &mut region.chunks[chunk_index];
+
+        chunk.erase_at(pos, radius);
+
+        self.redraw_finished = true;
+    }
+
+    // ---------------------------------------------------------
+    // 5. Distribuer une stroke dans les chunks concernés
+    // ---------------------------------------------------------
+    fn distribute_stroke_into_chunks(&mut self, stroke: PenStroke) {
+        // TODO: je te fais la version complète juste après
+        println!("TODO: distribute stroke into chunks");
     }
 }

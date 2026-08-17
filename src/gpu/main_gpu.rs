@@ -26,16 +26,21 @@ pub struct Vertex {
 }
 
 pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
-    let debug = true;
+    let top_left_pos = app.state.gpu_view.top_left.clone();
+    let Some(loaded_page) = &mut app.state.loaded_page else {
+        return;
+    };
     let mut finished_points: Vec<GpuPoint> = vec![];
     let mut nbr_stroke = 0;
     let mut nbr_point = 0;
     let mut nbr_point_current_stroke = 0;
-    let redraw_finished = app.state.current_file.as_ref().unwrap().redraw_finished;
-    // let redraw_finished = true;
-    app.state.current_file.as_mut().unwrap().redraw_finished = false;
-    if redraw_finished || debug {
-        for stroke in &app.state.current_file.as_ref().unwrap().strokes {
+    // let redraw_finished = app.state.current_file.as_ref().unwrap().redraw_finished;
+    // // let redraw_finished = true;
+    // app.state.current_file.as_mut().unwrap().redraw_finished = false;
+    // if redraw_finished {
+    for (_rx, _ry, _cx, _cy, chunk) in loaded_page.get_chunk(&top_left_pos) {
+        println!("draw r/c: {} {} {} {}", _rx, _ry, _cx, _cy);
+        for stroke in &chunk.strokes {
             // if stroke.deleted {
             //     println!("stroke deleted");
             //     continue;
@@ -57,29 +62,20 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     }
 
     let mut current_points: Vec<GpuPoint> = vec![];
-    for (j, p) in app
-        .state
-        .current_file
-        .as_ref()
-        .unwrap()
-        .current_stroke
-        .iter()
-        .enumerate()
-    {
+    // for (j, p) in app
+    //     .state
+    //     .current_file
+    //     .as_ref()
+    //     .unwrap()
+    //     .current_stroke
+    //     .iter()
+    //     .enumerate()
+    for (j, p) in loaded_page.current_stroke.iter().enumerate() {
         current_points.push(GpuPoint {
             pos: [p.pos.x, p.pos.y],
             pressure: p.pressure as f32,
             color: color_to_rgb(&app.state.color_palette.pen.color),
-            is_last: if j
-                == app
-                    .state
-                    .current_file
-                    .as_ref()
-                    .unwrap()
-                    .current_stroke
-                    .len()
-                    - 1
-            {
+            is_last: if j == loaded_page.current_stroke.len() - 1 {
                 1
             } else {
                 0
@@ -91,9 +87,9 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
         nbr_point_current_stroke += 1;
         println!("point cur: {}", p.pos);
     }
-    if redraw_finished {
-        app.nbr_redraw += 1;
-    }
+    // if redraw_finished {
+    //     app.nbr_redraw += 1;
+    // }
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -116,7 +112,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
         MainCallback {
             current_points,
             finished_points,
-            redraw_finished,
+            redraw_finished: true, //redraw_finished,
             nbr_stroke,
             canvas_size: rect.size(),
             gpu_view: app.state.gpu_view.clone(),

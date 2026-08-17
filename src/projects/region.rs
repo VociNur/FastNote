@@ -35,9 +35,9 @@ impl RegionCache {
         let region_path = self.regions_path.join(format!("region_{}_{}.json", rx, ry));
 
         let region_response = if region_path.exists() {
-            LoadedRegion::load(region_path, rx, ry)
+            LoadedRegion::load(self.regions_path.clone(), rx, ry) //pas ouf de réutiliser regions_path, mais osef
         } else {
-            Ok(LoadedRegion::new(rx, ry))
+            Ok(LoadedRegion::new(self.regions_path.clone(), rx, ry))
         };
         let Ok(region) = region_response else {
             println!(
@@ -97,12 +97,23 @@ pub struct LoadedRegion {
 }
 
 impl LoadedRegion {
-    pub fn new(rx: i32, ry: i32) -> Self {
-        Self {
+    pub fn new(region_path: PathBuf, rx: i32, ry: i32) -> Self {
+        let s = Self {
             rx,
             ry,
             chunks: vec![Chunk::new_blank(); 16],
+        };
+        let res = s.save(region_path.clone());
+        if res.is_err() {
+            println!(
+                "Error loaded region: {:?} {} {} {:?}",
+                region_path.clone(),
+                rx,
+                ry,
+                res.err()
+            );
         }
+        s
     }
     pub fn filename(&self) -> String {
         format!("region_{}_{}.json", self.rx, self.ry)

@@ -90,7 +90,7 @@ impl StyletManager {
         let gpu_rect = opt_gpu_rect.unwrap();
         // println!("gpu rect {:?} {:?}", gpu_rect, pos);
         if gpu_rect.contains(pos) {
-            if let Some(file) = state.current_file.as_mut() {
+            if let Some(file) = state.loaded_page.as_mut() {
                 let draw_pos =
                     (pos - gpu_rect.min) / state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
                 let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
@@ -159,8 +159,12 @@ impl StyletManager {
             );
         } else {
             state.cursor_icon = egui::CursorIcon::Default;
-            if let Some(file) = &mut state.current_file {
-                file.save_current_stroke(&state.color_palette.pen);
+            // if leiit Some(file) = &mut state.current_file {
+            //     file.save_current_stroke(&state.color_palette.pen);
+            // }
+            let pen = state.color_palette.pen.clone();
+            if let Some(loaded_file) = &mut state.loaded_page{
+                loaded_file.save_current_stroke(&pen);
             }
         }
     }

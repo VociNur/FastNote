@@ -6,7 +6,7 @@ fn rect_points_to_pixels(rect_points: egui::Rect, ppp: f32) -> egui::Rect {
 }
 
 pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
-    if app.state.current_file.is_some() {
+    if app.state.loaded_page.is_some() {
         egui::CentralPanel::default().show(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
             let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
