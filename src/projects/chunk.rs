@@ -16,7 +16,7 @@ impl Chunk {
 
     pub fn erase_at(&mut self, pos: egui::Pos2, radius: f32) {
         let eraser_rect = egui::Rect::from_center_size(pos, egui::vec2(radius * 2.0, radius * 2.0));
-        let radius_sq = radius * radius;
+        // let radius_sq = radius * radius;
         for stroke in &mut self.strokes {
             if stroke.deleted {
                 continue;
@@ -28,14 +28,14 @@ impl Chunk {
             }
 
             // Test précis seulement si bbox intersecte
-            // if stroke.intersects_point(pos, radius) {
-            //     stroke.deleted = true;
-            //
-            //     // println!("Deleted one");
-            // }
-            if stroke.touch_point(pos, radius_sq) {
+            if stroke.intersects_point(pos, radius) {
                 stroke.deleted = true;
+
+                // println!("Deleted one");
             }
+            // if stroke.touch_point(pos, radius_sq) {
+            //     stroke.deleted = true;
+            // }
         }
     }
 }

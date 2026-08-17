@@ -7,3 +7,4 @@ antialiasing is not working ?
 settings pour theme
 images
 move strokes
+move screen with touchpad

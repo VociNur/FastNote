@@ -163,7 +163,7 @@ impl App {
         // println!("has focus{}", has_focus);
         // if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
         //     println!("Save state");
-        // }
+        // }/
         // if ctx.input(|i| i.key_pressed(egui::Key::L) && i.modifiers.ctrl) {
         //     println!("Load state");
         // }
@@ -240,7 +240,10 @@ impl eframe::App for App {
         self.update(ui.ctx(), frame);
         // println!("viewport {}", ViewportId::ROOT);
         self.debug_info.lines = vec![];
-        ui.ctx().set_cursor_icon(self.state.cursor_icon);
+        // ui.ctx().set_cursor_icon(self.state.cursor_icon);
+        if self.stylet_manager.stylet.pressed {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::None);
+        }
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);

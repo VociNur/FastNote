@@ -105,7 +105,7 @@ impl StyletManager {
                         println!("erase skip");
                         return;
                     }
-                    file.erase_at(draw_pos.to_pos2(), 1f32);
+                    file.erase_at(draw_pos.to_pos2(), 2f32);
                     let elapsed = t.elapsed();
                     self.last_erase_at_pos = Some(draw_pos.to_pos2());
                     println!("Eraser timing: {:?}", elapsed);

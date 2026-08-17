@@ -741,19 +741,31 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
     ui.vertical(|ui| {
         ui.heading("Pages");
         ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            // Bouton + Page (juste un print)
+            if ui.button("+ Page").clicked() {
+                println!("(DEBUG) Create page");
+                app.state.modal_window =
+                    crate::ui::modal_windows::modal_window::ModalWindow::NewPage(
+                        crate::ui::modal_windows::new_page_modal_window::NewPageModalWindow {
+                            parent: app.state.current_fastnote_file.clone().unwrap(),
+                            folder_name: "".to_owned(),
+                            display_name: "".to_owned(),
+                        },
+                    )
+            }
 
-        // Bouton + Page (juste un print)
-        if ui.button("+ Page").clicked() {
-            println!("(DEBUG) Create page");
-            app.state.modal_window = crate::ui::modal_windows::modal_window::ModalWindow::NewPage(
-                crate::ui::modal_windows::new_page_modal_window::NewPageModalWindow {
-                    parent: app.state.current_fastnote_file.clone().unwrap(),
-                    folder_name: "".to_owned(),
-                    display_name: "".to_owned(),
-                },
-            )
-        }
-
+            // Bouton + Page (juste un print)
+            if ui.button("Reload Page").clicked() {
+                println!("(DEBUG) Reload page");
+                app.state
+                    .loaded_page
+                    .as_mut()
+                    .unwrap()
+                    .clear_buffer_finished = true;
+                app.state.loaded_page.as_mut().unwrap().clear_buffer_current = true;
+            }
+        });
         ui.separator();
 
         // --- 2) DnD sur les pages clonées ---
