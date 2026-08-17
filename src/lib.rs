@@ -9,7 +9,6 @@ pub mod app;
 pub mod edition;
 pub mod errors;
 pub mod event_managers;
-pub mod file_tree_state;
 pub mod gpu;
 pub mod icons;
 pub mod paths;
@@ -19,7 +18,6 @@ pub mod state;
 pub mod strokes;
 pub mod stylet;
 pub mod themes;
-pub mod tree;
 pub mod ui;
 fn get_working_path() -> std::path::PathBuf {
     dirs::data_dir().unwrap_or_else(|| std::path::PathBuf::from("."))

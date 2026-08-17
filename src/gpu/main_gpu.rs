@@ -1,7 +1,9 @@
 use bytemuck::{Pod, Zeroable};
-use eframe::egui::{self, Rect};
+use eframe::egui::{self, Color32, Rect};
 
-use crate::{app::App, color_to_rgb, gpu::main_renderer::MainCallback};
+use crate::{
+    app::App, color_to_rgb, gpu::main_renderer::MainCallback, projects::region::CHUNKS_PER_REGION_X,
+};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[repr(C)]
@@ -25,6 +27,31 @@ pub struct Vertex {
     color: [f32; 4],
 }
 
+pub fn chunk_color(rx: i32, ry: i32, chunk_index: usize) -> Color32 {
+    // palette de couleurs très contrastées
+    const COLORS: [Color32; 11] = [
+        Color32::BLACK,
+        Color32::RED,
+        Color32::BLUE,
+        Color32::GREEN,
+        Color32::YELLOW,
+        Color32::MAGENTA,
+        Color32::CYAN,
+        Color32::LIGHT_RED,
+        Color32::LIGHT_BLUE,
+        Color32::LIGHT_GREEN,
+        Color32::LIGHT_YELLOW,
+    ];
+
+    // hash simple et stable basé sur la position du chunk
+    let h = (rx * 73856093) ^ (ry * 19349663) ^ ((chunk_index as i32) * 83492791);
+
+    // index dans la palette
+    let idx = (h.abs() as usize) % COLORS.len();
+
+    COLORS[idx]
+}
+
 pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     let top_left_pos = app.state.gpu_view.top_left.clone();
     let Some(loaded_page) = &mut app.state.loaded_page else {
@@ -39,6 +66,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     // app.state.current_file.as_mut().unwrap().redraw_finished = false;
     // if redraw_finished {
     for (_rx, _ry, _cx, _cy, chunk) in loaded_page.get_chunk(&top_left_pos) {
+        let _chunk_index = _cy * CHUNKS_PER_REGION_X + _cx;
         // println!("draw r/c: {} {} {} {}", _rx, _ry, _cx, _cy);
         for stroke in &chunk.strokes {
             // if stroke.deleted {
@@ -50,6 +78,7 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
                     pos: [p.pos.x, p.pos.y],
                     pressure: p.pressure as f32,
                     color: color_to_rgb(&stroke.color),
+                    // color: color_to_rgb(&chunk_color(_rx, _ry, _chunk_index)),
                     is_last: if j == stroke.points.len() - 1 { 1 } else { 0 },
                     deleted: if stroke.deleted { 1 } else { 0 },
                     _pad2: 0,
@@ -107,6 +136,11 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
     while subdivision > 2 && subdivision * nbr_point > 35_000 {
         subdivision -= 1;
     }
+
+    let clear_buffer_finished = loaded_page.clear_buffer_finished;
+    let clear_buffer_current = loaded_page.clear_buffer_current;
+    loaded_page.clear_buffer_finished = false;
+    loaded_page.clear_buffer_current = false;
     ui.painter().add(egui_wgpu::Callback::new_paint_callback(
         rect,
         MainCallback {
@@ -117,6 +151,8 @@ pub fn draw_gpu(ui: &mut egui::Ui, app: &mut App, rect: Rect) {
             canvas_size: rect.size(),
             gpu_view: app.state.gpu_view.clone(),
             subdivision,
+            clear_buffer_finished,
+            clear_buffer_current,
         },
     ));
 }

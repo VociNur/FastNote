@@ -144,20 +144,26 @@ impl MainRenderer {
         let vertices_current_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("vertices current"),
             size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let vertices_finished_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("vertices finished"),
             size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let vertices_debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("vertices debug"),
             size: (max_vertices * std::mem::size_of::<Vertex>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -655,6 +661,8 @@ pub struct MainCallback {
     pub canvas_size: Vec2,
     pub gpu_view: GpuView,
     pub subdivision: u32,
+    pub clear_buffer_finished: bool,
+    pub clear_buffer_current: bool,
 }
 impl egui_wgpu::CallbackTrait for MainCallback {
     fn prepare(
@@ -666,7 +674,17 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         resources: &mut egui_wgpu::CallbackResources,
     ) -> Vec<wgpu::CommandBuffer> {
         let renderer = resources.get_mut::<MainRenderer>().unwrap();
+        if self.clear_buffer_finished {
+            encoder.clear_buffer(&renderer.points_finished_buffer, 0, None);
+            encoder.clear_buffer(&renderer.vertices_finished_buffer, 0, None);
+        }
+        if self.clear_buffer_current {
+            encoder.clear_buffer(&renderer.points_current_buffer, 0, None);
+            encoder.clear_buffer(&renderer.vertices_current_buffer, 0, None);
+        }
 
+        // encoder.clear_buffer(&renderer.points_debug_buffer, 0, None);
+        // encoder.clear_buffer(&renderer.vertices_debug_buffer, 0, None);
         // 1. Uniforms
         let ppp = sd.pixels_per_point;
         queue.write_buffer(
@@ -719,6 +737,6 @@ impl egui_wgpu::CallbackTrait for MainCallback {
         if !self.current_points.is_empty() {
             renderer.render_current(pass);
         }
-        renderer.render_debug(pass);
+        // renderer.render_debug(pass);
     }
 }

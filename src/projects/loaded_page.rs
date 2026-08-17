@@ -23,6 +23,8 @@ pub struct LoadedPage {
     pub current_stroke: Vec<StrokePoint>,
     pub redraw_finished: bool,
     pub regions: RegionCache,
+    pub clear_buffer_finished: bool,
+    pub clear_buffer_current: bool,
     //assets
 }
 impl LoadedPage {
@@ -32,6 +34,8 @@ impl LoadedPage {
             current_stroke: vec![],
             redraw_finished: false,
             regions: RegionCache::new(path.join("regions")),
+            clear_buffer_finished: true,
+            clear_buffer_current: true,
         }
     }
 

@@ -134,7 +134,16 @@ impl LoadedRegion {
     pub fn load(regions_path: PathBuf, x: i32, y: i32) -> anyhow::Result<Self> {
         let region_path = regions_path.join(Self::filename_from_pos(x, y));
         let json = load_persistent_data(region_path)?;
-        let region: Self = serde_json::from_str(&json)?;
+        let mut region: Self = serde_json::from_str(&json)?;
+
+        for chunk in &mut region.chunks {
+            chunk.strokes.retain(|s| !s.deleted);
+        }
+        let res = region.save(regions_path);
+        if res.is_err() {
+            println!("Error: {:?}", res.err());
+        }
+
         Ok(region)
     }
 
