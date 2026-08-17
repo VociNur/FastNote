@@ -8,9 +8,7 @@ use crate::{
     edition::open_edition_mode,
     gpu::gpuview::GpuView,
     pen::color_palette::ColorPalette,
-    projects::{
-        loaded_page::LoadedPage, opened_projects::OpenedProjectsManager, user_file::UserFile,
-    },
+    projects::{loaded_page::LoadedPage, opened_projects::OpenedProjectsManager},
     themes::ThemeData,
     ui::modal_windows::modal_window::ModalWindow,
 };
@@ -51,9 +49,8 @@ pub struct State {
     //File
     pub modal_window: ModalWindow,
     pub opened_projects: OpenedProjectsManager,
-    pub current_file: Option<UserFile>,
     pub current_fastnote_file: Option<PathBuf>,
-    pub current_fastnote_page: Option<PathBuf>,
+    // pub current_fastnote_page: Option<PathBuf>,
     pub loaded_page: Option<LoadedPage>,
     //Menu
     // pub file_tree: FileTreeState,
@@ -77,9 +74,9 @@ impl Default for State {
             modal_window: ModalWindow::None,
             cursor_icon: egui::CursorIcon::Default,
             opened_projects: OpenedProjectsManager::default(),
-            current_file: None,
+
             current_fastnote_file: None,
-            current_fastnote_page: None,
+            // current_fastnote_page: None,
             loaded_page: None,
             edition_open: false,
             gpu_view: GpuView::default(),

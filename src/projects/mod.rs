@@ -5,5 +5,4 @@ pub mod loaded_page;
 pub mod opened_projects;
 pub mod region;
 pub mod tree_order;
-pub mod user_file;
 pub mod user_project;

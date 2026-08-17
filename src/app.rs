@@ -5,12 +5,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{
-    edition::open_edition_mode,
-    projects::{loaded_page::LoadedPage, user_file::UserFile},
-    state::State,
-};
-use crate::{errors::DisplayError, ui::ui::draw_gui};
+use crate::{edition::open_edition_mode, errors::DisplayError, projects::loaded_page::LoadedPage, state::State, ui::ui::draw_gui};
 use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::{
     stylet::stylet_inputs::spawn_pen_thread,
@@ -143,16 +138,16 @@ impl App {
         Ok(())
     }
 
-    pub fn open_file(&mut self, file_path: PathBuf) {
-        // println!("file path: {:?}", file_path);
-        // let json = std::fs::read_to_string(&file_path).unwrap_or_default();
-        // let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default()
-        let user_file = UserFile::from_path(file_path.clone());
-        if user_file.is_err() {
-            println!("Could not load file {:?}", file_path);
-        }
-        self.state.current_file = Some(user_file.unwrap());
-    }
+    // pub fn open_file(&mut self, file_path: PathBuf) {
+    //     // println!("file path: {:?}", file_path);
+    //     // let json = std::fs::read_to_string(&file_path).unwrap_or_default();
+    //     // let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default()
+    //     let user_file = UserFile::from_path(file_path.clone());
+    //     if user_file.is_err() {
+    //         println!("Could not load file {:?}", file_path);
+    //     }
+    //     self.state.current_file = Some(user_file.unwrap());
+    // }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
