@@ -99,11 +99,12 @@ impl FastnoteProject {
             }
         }
 
-        Ok(Self {
+        let s = Self {
             path,
             manifest,
             children,
-        })
+        };
+        Ok(s)
     }
 
     pub fn get_name(&self) -> String {
@@ -122,7 +123,78 @@ impl FastnoteProject {
         self.manifest.color = color;
         self.save()
     }
-    pub fn get_order(&mut self) {}
+
+    pub fn update_page_order(&mut self) {
+        // --- Synchronisation manifest <-> filesystem ---
+
+        // 1) Pages réellement présentes dans le filesystem
+        let fs_pages: Vec<String> = self
+            .children
+            .iter()
+            .map(|p| {
+                p.get_path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect();
+
+        // 2) Ordre du manifest (peut être vide si ancien projet)
+        let mut order = self.manifest.order.clone();
+
+        // 3) Si ancien projet → ordre naturel
+        if order.is_empty() {
+            order = fs_pages.clone();
+        }
+
+        // 4) Reconstruire la liste ordonnée
+        let mut final_children = Vec::new();
+
+        // Pages dans l'ordre du manifest
+        for name in &order {
+            if let Some(page) = self
+                .children
+                .iter()
+                .find(|p| p.get_path().file_name().unwrap().to_str().unwrap() == name)
+            {
+                final_children.push(page.clone());
+            }
+        }
+
+        // 5) Ajouter les pages qui existent mais ne sont pas dans l'ordre
+        for page in &self.children {
+            let name = page
+                .get_path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+            if !order.contains(&name) {
+                final_children.push(page.clone());
+            }
+        }
+
+        // 6) Mettre à jour le manifest (supprime les pages inexistantes)
+        self.manifest.order = final_children
+            .iter()
+            .map(|p| {
+                p.get_path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect();
+        self.children = final_children;
+        let res = self.save();
+        if let Err(err) = res {
+            println!("Error while saving order page: {:?}", err);
+        }
+    }
 }
 impl FastnoteFolder {
     pub fn load(path: PathBuf) -> anyhow::Result<Self> {
@@ -141,11 +213,13 @@ impl FastnoteFolder {
             }
         }
 
-        Ok(Self {
+        let mut s = Self {
             path,
             manifest,
             children,
-        })
+        };
+        s.update_page_order();
+        Ok(s)
     }
 
     pub fn save(&self) -> Result<()> {
@@ -173,6 +247,79 @@ impl FastnoteFolder {
         };
         folder.save()?;
         Ok(folder)
+    }
+    //Code "doublon", TODO: retirer
+
+    pub fn update_page_order(&mut self) {
+        // --- Synchronisation manifest <-> filesystem ---
+
+        // 1) Pages réellement présentes dans le filesystem
+        let fs_pages: Vec<String> = self
+            .children
+            .iter()
+            .map(|p| {
+                p.get_path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect();
+
+        // 2) Ordre du manifest (peut être vide si ancien projet)
+        let mut order = self.manifest.order.clone();
+
+        // 3) Si ancien projet → ordre naturel
+        if order.is_empty() {
+            order = fs_pages.clone();
+        }
+
+        // 4) Reconstruire la liste ordonnée
+        let mut final_children = Vec::new();
+
+        // Pages dans l'ordre du manifest
+        for name in &order {
+            if let Some(page) = self
+                .children
+                .iter()
+                .find(|p| p.get_path().file_name().unwrap().to_str().unwrap() == name)
+            {
+                final_children.push(page.clone());
+            }
+        }
+
+        // 5) Ajouter les pages qui existent mais ne sont pas dans l'ordre
+        for page in &self.children {
+            let name = page
+                .get_path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+            if !order.contains(&name) {
+                final_children.push(page.clone());
+            }
+        }
+
+        // 6) Mettre à jour le manifest (supprime les pages inexistantes)
+        self.manifest.order = final_children
+            .iter()
+            .map(|p| {
+                p.get_path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect();
+        self.children = final_children;
+        let res = self.save();
+        if let Err(err) = res {
+            println!("Error while saving order page: {:?}", err);
+        }
     }
 }
 
@@ -333,6 +480,12 @@ impl FolderEntry {
                 "FolderEntry::load: type {:?} invalide pour un enfant",
                 manifest.r#type
             )),
+        }
+    }
+    pub fn get_path(&self) -> PathBuf {
+        match self {
+            FolderEntry::Folder(folder) => folder.path.clone(),
+            FolderEntry::File(file) => file.path.clone(),
         }
     }
 }
