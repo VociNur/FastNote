@@ -1,6 +1,6 @@
 use crate::app::WindowState;
 use crate::stylet::stylet_manager::{
-    AxisEventState, ButtonEventState, ProximityEventState, StyletEvent, TipEventState
+    AxisEventState, ButtonEventState, ProximityEventState, StyletEvent, TipEventState,
 };
 use std::fs::OpenOptions;
 use std::os::unix::{

@@ -70,9 +70,26 @@ impl FingerManager {
                     }
                 }
             }
-            // egui::Event::PointerMoved(pos) => {}
+            // // egui::Event::PointerMoved(pos) => {}
+            // egui::Event::PointerMoved(pos) => {
+            //     println!("pos {}", pos);
+            // }
+            // egui::Event::Zoom(z) => {
+            //     println!("zoom: {:?}", z);
+            // }
+            // egui::Event::MouseWheel {
+            //     unit,
+            //     delta,
+            //     phase,
+            //     modifiers,
+            // } => {
+            //     println!(
+            //         "mousewheel: {:?} {} {:?} {:?}",
+            //         unit, delta, phase, modifiers
+            //     );
+            // }
             _ => {
-                // println!("event {:?}", event);
+                println!("event {:?}", event);
             }
         }
     }

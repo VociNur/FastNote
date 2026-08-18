@@ -8,3 +8,4 @@ settings pour theme
 images
 move strokes
 move screen with touchpad
+move file/folder/project

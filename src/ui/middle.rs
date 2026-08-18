@@ -342,12 +342,8 @@ fn find_file_rec(entries: &mut Vec<FolderEntry>, path: PathBuf) -> Option<&mut F
     None
 }
 
-pub fn draw_tree(
-    ui: &mut egui::Ui,
-    flat: &mut Vec<FlatNode>,
-    app: &mut App,
-) -> egui_dnd::DragDropResponse {
-    egui_dnd::dnd(ui, "fastnote_tree").show_vec(flat, |ui, item, handle, _state| {
+pub fn draw_tree(ui: &mut egui::Ui, flat: &mut Vec<FlatNode>, app: &mut App) {
+    let response = egui_dnd::dnd(ui, "fastnote_tree").show_vec(flat, |ui, item, handle, _state| {
         ui.horizontal(|ui| {
             ui.add_space(item.depth as f32 * 20.0);
 
@@ -426,7 +422,14 @@ pub fn draw_tree(
                 });
             });
         });
-    })
+    });
+    if response.is_drag_finished() {
+        // let old_index = response.drag_source_index().unwrap();
+        // let new_index = response.drag_target_index().unwrap();
+
+        // let old_parent = flat[old_index].parent_path.clone();
+        // let new_parent = flat[new_index].parent_path.clone();
+    }
 }
 pub fn create_fastnote_folder(path: PathBuf, app: &mut App) {
     app.state.modal_window = super::modal_windows::modal_window::ModalWindow::NewFolder(
