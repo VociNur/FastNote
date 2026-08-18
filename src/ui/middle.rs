@@ -545,10 +545,19 @@ pub fn draw_page_menu_left(ui: &mut egui::Ui, app: &mut App) {
 
         // On peut print le résultat du DnD
         if response.is_drag_finished() {
-            println!("(DEBUG) Pages reordered:");
-            for (i, (_, name)) in pages.iter().enumerate() {
-                println!("  {} → {}", i, name);
-            }
+            // println!("(DEBUG) Pages reordered:");
+            // for (i, (_, name)) in pages.iter().enumerate() {
+            //     println!("  {} → {}", i, name);
+            // }
+            //
+            //
+            //Over file, permit to drop the last one
+            let Some(file) = find_file_mut(app, path_file.clone()) else {
+                app.push_minute_error(ui, "Could not load file for left page menu.");
+                return;
+            };
+            file.manifest.order = pages.into_iter().map(|(_, n)| n).collect();
+            file.update_page_order();
         }
     });
 }

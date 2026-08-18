@@ -36,6 +36,7 @@ impl FastnotePage {
             name,
             color,
             is_open: false,
+            order: vec![],
         };
 
         fs::create_dir_all(page_path.clone())?;
@@ -51,4 +52,5 @@ impl FastnotePage {
         page.save()?;
         Ok(page)
     }
+
 }

@@ -115,3 +115,8 @@ FastnoteProject/
     │   └── r_1_1.json
       └── image/
         └── preview.png
+
+
+        
+Move/Create/Delete a file/folder/project reload entire the tree.
+Move a page change nothing except the parent file.
