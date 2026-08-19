@@ -1,6 +1,7 @@
 use crate::app::WindowState;
 use crate::stylet::stylet_manager::{
-    AxisEventState, ButtonEventState, ProximityEventState, StyletEvent, TipEventState,
+    AxisEventState, ButtonEventState, MoveEventState, MyLibInputEvent, ProximityEventState,
+    StyletEvent, TipEventState,
 };
 use std::fs::OpenOptions;
 use std::os::unix::{
@@ -12,7 +13,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use eframe::egui::{self};
+use input::event::pointer::PointerScrollEvent;
 use input::event::tablet_tool::TabletToolType;
+use input::event::PointerEvent;
+use input::ffi::libinput;
 use input::{
     event::{
         tablet_tool::{TabletToolEvent, TabletToolEventTrait},
@@ -45,7 +49,7 @@ impl LibinputInterface for Interface {
 // pub fn spawn_pen_thread(stack: Arc<Mutex<Vec<TabletToolEvent>>>, window_state: Arc<Mutex<WindowState>>) {
 pub fn spawn_pen_thread(
     window_state: Arc<Mutex<WindowState>>,
-    events: Arc<Mutex<Vec<StyletEvent>>>,
+    events: Arc<Mutex<Vec<MyLibInputEvent>>>,
     width: u32,
     height: u32,
     ctx: egui::Context,
@@ -66,63 +70,137 @@ pub fn spawn_pen_thread(
 
             input.dispatch().unwrap();
             let window_pos = window_state.lock().unwrap().pos.clone();
-            let mut batch = vec![];
+            let mut batch: Vec<MyLibInputEvent> = vec![];
             for event in &mut input {
-                if let Event::Tablet(tablet_event) = event {
-                    // if !matches!(tablet_event, TabletToolEvent::Axis(_)){
-                    //     println!("tablet_event: {tablet_event:?}");
+                match event {
+                    Event::Tablet(tablet_event) => {
+                        // if !matches!(tablet_event, TabletToolEvent::Axis(_)){
+                        //     println!("tablet_event: {tablet_event:?}");
+
+                        // }
+                        // println!("{:?}", tablet_event.tool().tool_type());
+                        let pos = egui::pos2(
+                            tablet_event.x_transformed(width) as f32 - window_pos.x,
+                            tablet_event.y_transformed(height) as f32 - window_pos.y, //todo ppp
+                        );
+                        let tooltype = tablet_event.tool().tool_type().unwrap_or_else(|| {
+                            println!("No tool type, default: pen");
+                            TabletToolType::Pen
+                        });
+                        match tablet_event {
+                            TabletToolEvent::Axis(axis_event) => {
+                                batch.push(MyLibInputEvent::Stylet(StyletEvent::Axis(
+                                    AxisEventState::new(
+                                        pos,
+                                        axis_event.pressure(),
+                                        axis_event.distance(),
+                                        axis_event.tilt_x(),
+                                        axis_event.tilt_y(),
+                                        tooltype,
+                                    ),
+                                )));
+                            }
+                            TabletToolEvent::Tip(tip_event) => {
+                                batch.push(MyLibInputEvent::Stylet(StyletEvent::Tip(
+                                    TipEventState::new(
+                                        pos,
+                                        tip_event.pressure(),
+                                        tip_event.distance(),
+                                        tip_event.tilt_x(),
+                                        tip_event.tilt_y(),
+                                        tip_event.tip_state(),
+                                        tooltype,
+                                    ),
+                                )));
+                            }
+                            TabletToolEvent::Proximity(proximity_event) => {
+                                batch.push(MyLibInputEvent::Stylet(StyletEvent::Proximity(
+                                    ProximityEventState::new(
+                                        pos,
+                                        proximity_event.pressure(),
+                                        proximity_event.distance(),
+                                        proximity_event.tilt_x(),
+                                        proximity_event.tilt_y(),
+                                        proximity_event.proximity_state(),
+                                        tooltype,
+                                    ),
+                                )));
+                            }
+                            TabletToolEvent::Button(button_event) => {
+                                batch.push(MyLibInputEvent::Stylet(StyletEvent::Button(
+                                    ButtonEventState::new(
+                                        button_event.button(),
+                                        button_event.button_state(),
+                                        tooltype,
+                                    ),
+                                )));
+                            }
+                            _ => todo!(),
+                        }
+                    }
+                    // Event::Touch(tablet_pad_event) => {
 
                     // }
-                    // println!("{:?}", tablet_event.tool().tool_type());
-                    let pos = egui::pos2(
-                        tablet_event.x_transformed(width) as f32 - window_pos.x,
-                        tablet_event.y_transformed(height) as f32 - window_pos.y, //todo ppp
-                    );
-                    let tooltype = tablet_event.tool().tool_type().unwrap_or_else(|| {
-                        println!("No tool type, default: pen");
-                        TabletToolType::Pen
-                    });
-                    match tablet_event {
-                        TabletToolEvent::Axis(axis_event) => {
-                            batch.push(StyletEvent::Axis(AxisEventState::new(
-                                pos,
-                                axis_event.pressure(),
-                                axis_event.distance(),
-                                axis_event.tilt_x(),
-                                axis_event.tilt_y(),
-                                tooltype,
-                            )));
+                    Event::Gesture(gesture) => match gesture {
+                        input::event::GestureEvent::Pinch(pinch) => match pinch {
+                            input::event::gesture::GesturePinchEvent::Update(update) => {
+                                // update.dx();
+                                // update.dy();
+                            }
+                            _ => {
+                                #[cfg(feature = "debug-input")]
+                                println!("gesture pinch: {:?}", pinch);
+                            }
+                        },
+                        _ => {
+                            #[cfg(feature = "debug-input")]
+                            println!("Gesture: {:?}", gesture);
                         }
-                        TabletToolEvent::Tip(tip_event) => {
-                            batch.push(StyletEvent::Tip(TipEventState::new(
-                                pos,
-                                tip_event.pressure(),
-                                tip_event.distance(),
-                                tip_event.tilt_x(),
-                                tip_event.tilt_y(),
-                                tip_event.tip_state(),
-                                tooltype,
-                            )));
+                    },
+                    Event::Pointer(pointer) => match pointer {
+                        PointerEvent::ScrollFinger(pointer_scroll_event) => {
+                            #[cfg(feature = "debug-input")]
+                            println!("tt: {:?}", pointer_scroll_event);
+                            if pointer_scroll_event.has_axis(input::event::pointer::Axis::Vertical)
+                            {
+                                let dx = pointer_scroll_event
+                                    .scroll_value(input::event::pointer::Axis::Vertical);
+                                #[cfg(feature = "debug-input")]
+                                println!("dx: {:?}", dx);
+                                batch.push(MyLibInputEvent::Touchpad(
+                                    crate::stylet::stylet_manager::TouchpadEvent::Move(
+                                        MoveEventState::new(dx, 0.),
+                                    ),
+                                ));
+                            }
+                            if pointer_scroll_event
+                                .has_axis(input::event::pointer::Axis::Horizontal)
+                            {
+                                let dy = pointer_scroll_event
+                                    .scroll_value(input::event::pointer::Axis::Horizontal);
+                                #[cfg(feature = "debug-input")]
+                                println!("dy: {:?}", dy);
+                                batch.push(MyLibInputEvent::Touchpad(
+                                    crate::stylet::stylet_manager::TouchpadEvent::Move(
+                                        MoveEventState::new(0., dy),
+                                    ),
+                                ));
+                            }
+                            // let dy = pointer_scroll_event.scroll_value(Axis::Vertical);
+                            // batch.push(MyLibInputEvent::Touchpad(
+                            //     crate::stylet::stylet_manager::TouchpadEvent::Move(
+                            //         MoveEventState::new(dx, dy),
+                            //     ),
+                            // ));
                         }
-                        TabletToolEvent::Proximity(proximity_event) => {
-                            batch.push(StyletEvent::Proximity(ProximityEventState::new(
-                                pos,
-                                proximity_event.pressure(),
-                                proximity_event.distance(),
-                                proximity_event.tilt_x(),
-                                proximity_event.tilt_y(),
-                                proximity_event.proximity_state(),
-                                tooltype,
-                            )));
+                        _ => {
+                            #[cfg(feature = "debug-input")]
+                            println!("Scroll finger: {:?}", pointer);
                         }
-                        TabletToolEvent::Button(button_event) => {
-                            batch.push(StyletEvent::Button(ButtonEventState::new(
-                                button_event.button(),
-                                button_event.button_state(),
-                                tooltype,
-                            )));
-                        }
-                        _ => todo!(),
+                    },
+                    _ => {
+                        #[cfg(feature = "debug-input")]
+                        println!("Pointer: {:?}", event)
                     }
                 }
 

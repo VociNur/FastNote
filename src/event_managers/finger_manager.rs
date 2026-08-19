@@ -89,6 +89,7 @@ impl FingerManager {
             //     );
             // }
             _ => {
+                #[cfg(feature = "debug-input")]
                 println!("event {:?}", event);
             }
         }
@@ -110,24 +111,13 @@ impl FingerManager {
         let last_finger = &self.user_inputs.fingers[finger_id].clone();
         if self.nbr_finger() == 1 {
             // println!("delta: {}", new_pos - last_finger.pos);
-            state.gpu_view.top_left -= (new_pos - last_finger.pos) / state.gpu_view.zoom * ppp;
+            state.gpu_view.move_top_left(new_pos - last_finger.pos, ppp);
         }
 
         if self.nbr_finger() == 2 {
             let other = &self.user_inputs.fingers[1 - finger_id]; // l'autre doigt
 
-            let old_dist = (last_finger.pos - other.pos).length();
-            let new_dist = (new_pos - other.pos).length();
-
-            let scale = new_dist / old_dist;
-            // Point central entre les deux doigts → centre du zoom
-            let center = (new_pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
-            // Zoom centré sur le point central
-            //Le other nous sert de repère
-            state.gpu_view.zoom *= scale;
-            state.gpu_view.zoom = state.gpu_view.zoom.clamp(1.0, 20.0);
-            let last_center = (last_finger.pos + other.pos.to_vec2()) / 2.0 / state.gpu_view.zoom;
-            state.gpu_view.top_left += center - last_center;
+            state.gpu_view.pinch(new_pos, last_finger.pos, other.pos);
         }
     }
 

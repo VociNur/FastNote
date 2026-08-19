@@ -26,7 +26,7 @@ rfd = "0.15"
 env_logger = "0.11.8"
 
 input = "0.9"
-libc = "0.2"
+libc = "0.2.189"
 screen_size = "0.1"
 
 
@@ -38,6 +38,10 @@ opt-level = 2
 opt-level = 2
 lto = false
 debug = false
+
+
+[features]
+debug-input = []
 
 # ----------------------------------------------------------------------------------------
 # Lints:

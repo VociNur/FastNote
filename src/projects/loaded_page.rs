@@ -117,6 +117,7 @@ impl LoadedPage {
     // ---------------------------------------------------------
     pub fn erase_at(&mut self, pos: Pos2, radius: f32) {
         println!("Would like to erase");
+        let regions_path = self.regions.regions_path.clone();
 
         // Trouver région + chunk
         let rx = (pos.x / REGION_PIXEL_SIZE_X).floor() as i32;
@@ -134,7 +135,10 @@ impl LoadedPage {
         let chunk = &mut region.chunks[chunk_index];
 
         chunk.erase_at(pos, radius);
-
+        let res = region.save(regions_path);
+        if let Err(err) = res {
+            println!("Error while saving region at erase {:?}", err);
+        }
         self.redraw_finished = true;
     }
 }

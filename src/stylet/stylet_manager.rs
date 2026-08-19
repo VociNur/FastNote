@@ -14,7 +14,7 @@ use crate::{state::State, strokes::strokes::StrokePoint, stylet::stylet::StyletS
 #[derive(Default)]
 pub struct StyletManager {
     pub stylet: StyletState,
-    pub events: Arc<Mutex<Vec<StyletEvent>>>, //un peu galère pas de trait copy
+    pub events: Arc<Mutex<Vec<MyLibInputEvent>>>, //un peu galère pas de trait copy
     pub last_erase_at_pos: Option<Pos2>,
 }
 
@@ -29,6 +29,42 @@ impl StyletManager {
         let events = std::mem::take(&mut *self.events.lock().unwrap());
         for event in events {
             match event {
+                MyLibInputEvent::Stylet(stylet_event)=>{
+                    self.manage_stylet_events(ctx, state, _has_focus, gpu_rect, stylet_event);
+                }
+                MyLibInputEvent::Touchpad(touchpad_event)=>{
+                    self.manage_touchpad_events(ctx, state, _has_focus, gpu_rect, touchpad_event);
+                }
+             }
+
+        }
+    }
+    pub fn manage_touchpad_events(&mut self,
+
+        ctx: &Context,
+        state: &mut State,
+        _has_focus: &bool,
+        gpu_rect: &Option<Rect>,
+         event: TouchpadEvent){
+         match event
+         {
+            TouchpadEvent::Zoom(zoom_event_state) => {
+                
+            },
+            TouchpadEvent::Move(move_event_state) => {
+                
+            },
+        }
+     }
+    pub fn manage_stylet_events(&mut self,
+
+        ctx: &Context,
+        state: &mut State,
+        _has_focus: &bool,
+        gpu_rect: &Option<Rect>,
+         event: StyletEvent){
+        match event{
+
                 StyletEvent::Axis(axis_event_state) => {
                     self.on_axis_event(ctx, state, &axis_event_state, gpu_rect);
                     self.stylet.pos = axis_event_state.pos;
@@ -63,9 +99,7 @@ impl StyletManager {
                     self.on_button_event(&button_event_state);
                     self.stylet.tool_type = button_event_state.tool_type;
                 }
-            }
-
-        }
+                }
     }
     pub fn touch_gpu(
         self: &mut Self,
@@ -176,12 +210,23 @@ impl StyletManager {
 }
 
 //ENUM
+pub enum MyLibInputEvent{
+    Stylet(StyletEvent),
+    Touchpad(TouchpadEvent),
+}
 pub enum StyletEvent {
     Axis(AxisEventState),
     Tip(TipEventState),
     Proximity(ProximityEventState),
     Button(ButtonEventState),
 }
+
+pub enum TouchpadEvent {
+    Zoom(ZoomEventState),
+    Move(MoveEventState),
+}
+
+
 
 #[derive(Debug)]
 pub struct AxisEventState {
@@ -294,3 +339,31 @@ impl ButtonEventState {
         }
     }
 }
+#[derive(Debug)]
+pub struct ZoomEventState{
+    dx: f32,
+    dy: f32
+}
+
+impl ZoomEventState{
+    pub fn new(dx: f32, dy: f32)->Self{
+        Self{
+            dx, dy
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct MoveEventState{
+    dx: f64,
+    dy: f64,
+}
+
+impl MoveEventState{
+    pub fn new(dx: f64, dy: f64)->Self{
+            Self{
+            dx, dy
+        }
+    }
+}
+

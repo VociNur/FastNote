@@ -5,7 +5,10 @@ use std::{
     time::Duration,
 };
 
-use crate::{edition::open_edition_mode, errors::DisplayError, projects::loaded_page::LoadedPage, state::State, ui::ui::draw_gui};
+use crate::{
+    edition::open_edition_mode, errors::DisplayError, projects::loaded_page::LoadedPage,
+    state::State, ui::ui::draw_gui,
+};
 use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::{
     stylet::stylet_inputs::spawn_pen_thread,
@@ -220,6 +223,7 @@ impl App {
     }
 
     pub fn open_page(&mut self, path: PathBuf) {
+        self.state.gpu_view.top_left = Pos2::ZERO;
         self.state.loaded_page = Some(LoadedPage::new(path));
     }
 }
