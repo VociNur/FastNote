@@ -89,8 +89,8 @@ impl FingerManager {
             //     );
             // }
             _ => {
-                #[cfg(feature = "debug-input")]
-                println!("event {:?}", event);
+                // #[cfg(feature = "debug-input")]
+                // println!("event {:?}", event);
             }
         }
     }

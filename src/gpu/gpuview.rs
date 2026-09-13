@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct GpuView {
     pub top_left: Pos2,
     pub zoom: f32,
+    pub last_touchpad_zoom: Option<f32>,
 }
 
 impl Default for GpuView {
@@ -13,6 +14,7 @@ impl Default for GpuView {
         Self {
             top_left: Pos2::default(),
             zoom: 1f32,
+            last_touchpad_zoom: None, //can be using while touchpad is zooming
         }
     }
 }

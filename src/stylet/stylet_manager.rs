@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use eframe::egui::{self, Context, Pos2, Rect};
+use eframe::egui::{self, Context, Pos2, Rect, util::id_type_map::TypeId};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
@@ -39,6 +39,8 @@ impl StyletManager {
 
         }
     }
+
+
     pub fn manage_touchpad_events(&mut self,
 
         ctx: &Context,
@@ -49,9 +51,28 @@ impl StyletManager {
          match event
          {
             TouchpadEvent::Zoom(zoom_event_state) => {
-                
+                println!("{:?}", zoom_event_state);
+                match zoom_event_state.phase{
+                    PhaseZoomEventState::BEGIN => {
+                        state.gpu_view.last_touchpad_zoom = Some(1.);
+                    }
+                    PhaseZoomEventState::UPDATE => {
+                        state.gpu_view.zoom *= zoom_event_state.scale as f32 / state.gpu_view.last_touchpad_zoom.unwrap_or_else(|| {println!("Error last zoom touchpad not init");1.});
+                        state.gpu_view.last_touchpad_zoom = Some(zoom_event_state.scale as f32);
+                        
+                    }
+                    PhaseZoomEventState::END => {
+                        state.gpu_view.last_touchpad_zoom = None;                        
+                    }
+
+                }                
             },
+            // top (-) to bot (+)
+            // left (-) to right (+)
             TouchpadEvent::Move(move_event_state) => {
+                println!("{:?}", move_event_state);
+                state.gpu_view.top_left.x -= move_event_state.dy as f32 * state.touchpad_scalor_settings_x;
+                state.gpu_view.top_left.y -= move_event_state.dx as f32 * state.touchpad_scalor_settings_y;
                 
             },
         }
@@ -339,16 +360,24 @@ impl ButtonEventState {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum PhaseZoomEventState{
+    BEGIN, UPDATE, END
+}
+
 #[derive(Debug)]
 pub struct ZoomEventState{
-    dx: f32,
-    dy: f32
+    phase: PhaseZoomEventState,
+    dx: f64,
+    dy: f64,
+    scale: f64,
 }
 
 impl ZoomEventState{
-    pub fn new(dx: f32, dy: f32)->Self{
+    pub fn new(phase: PhaseZoomEventState, dx: f64, dy: f64, scale: f64)->Self{
         Self{
-            dx, dy
+            phase, dx, dy, scale,
         }
     }
 }

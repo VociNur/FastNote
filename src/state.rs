@@ -62,6 +62,8 @@ pub struct State {
     pub edition_open: bool,
 
     pub gpu_view: GpuView,
+    pub touchpad_scalor_settings_x: f32,
+    pub touchpad_scalor_settings_y: f32,
 }
 
 impl Default for State {
@@ -82,6 +84,8 @@ impl Default for State {
             loaded_page: None,
             edition_open: false,
             gpu_view: GpuView::default(),
+            touchpad_scalor_settings_x: 4., //user will be able to change it
+            touchpad_scalor_settings_y: 4.,
         }
     }
 }

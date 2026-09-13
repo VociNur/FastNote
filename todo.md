@@ -4,10 +4,8 @@ antialiasing is not working ?
 
 
 ++
-settings pour theme + basic white theme
 images
 move strokes
-move screen with touchpad
 move file/folder/project
 pdf export/img export
 page color/ space between lines
@@ -16,9 +14,10 @@ save on another server
 
 
 
+settings pour theme + basic white theme
 remove mouse when drawing -> not a problem
 resize left panel -> temporar solution 
-
+move screen with touchpad -> will be better later
 
 
 
