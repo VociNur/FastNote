@@ -54,6 +54,7 @@ pub struct State {
     pub loaded_page: Option<LoadedPage>,
     //Menu
     // pub file_tree: FileTreeState,
+    pub show_left: bool,
 
     // pub pen: Pen,
     pub cursor_icon: egui::CursorIcon,
@@ -69,6 +70,7 @@ impl Default for State {
         Self {
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
+            show_left: true,
             color_palette: color_palette,
             // file_tree: FileTreeState::default(),
             modal_window: ModalWindow::None,

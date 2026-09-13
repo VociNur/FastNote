@@ -16,7 +16,6 @@ use eframe::egui::{self};
 use input::event::pointer::PointerScrollEvent;
 use input::event::tablet_tool::TabletToolType;
 use input::event::PointerEvent;
-use input::ffi::libinput;
 use input::{
     event::{
         tablet_tool::{TabletToolEvent, TabletToolEventTrait},

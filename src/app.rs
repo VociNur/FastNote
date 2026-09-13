@@ -1,3 +1,4 @@
+use chrono::Local;
 use eframe::egui::{self, Pos2, Rect};
 use std::{
     path::PathBuf,
@@ -6,8 +7,8 @@ use std::{
 };
 
 use crate::{
-    edition::open_edition_mode, errors::DisplayError, projects::loaded_page::LoadedPage,
-    state::State, ui::ui::draw_gui,
+    create_backup_notes_directory, edition::open_edition_mode, errors::DisplayError, get_last_save,
+    projects::loaded_page::LoadedPage, state::State, ui::ui::draw_gui,
 };
 use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::{
@@ -28,7 +29,6 @@ pub struct App {
     pub y_screen_size: u32,
     pub window_state: Arc<Mutex<WindowState>>,
     // pub last_pen_state: Option<PenState>,
-    //
     pub ppp: f32,
 
     pub debug_info: DebugInfo,
@@ -92,7 +92,30 @@ impl App {
             height,
             cc.egui_ctx.clone(),
         );
+        Self::try_local_save(&app);
         app
+    }
+
+    fn should_backup_today(_app: &App) -> bool {
+        let today = Local::now().date_naive();
+        let last_save = get_last_save();
+
+        println!("Last save {:?}\n Today {:?} ", last_save, today);
+
+        match last_save {
+            Some(last) => last != today,
+            None => true, // aucune sauvegarde → on sauvegarde
+        }
+    }
+    pub fn try_local_save(app: &App) {
+        let should_save = Self::should_backup_today(app);
+        println!("Should save: {}", should_save);
+        if should_save {
+            let res = create_backup_notes_directory();
+            if let Err(err) = res {
+                println!("{:?}", err);
+            }
+        }
     }
 
     pub fn user_opened_project(&mut self, path: PathBuf) {
@@ -114,11 +137,6 @@ impl App {
 
     pub fn user_created_project(&mut self, new_project_modal_window: &NewProjectModalWindow) {
         let dialog = new_project_modal_window;
-
-        // println!("Created");
-        // println!("name: {}", dialog.name);
-        // println!("color: {:?}", dialog.color);
-        // println!("path: {:?}", dialog.path);
         let err = self.state.opened_projects.create_blank_project(
             dialog.path.clone().join(dialog.name.clone()),
             dialog.name.clone(),
@@ -126,31 +144,6 @@ impl App {
         );
         println!("{:?}", err);
     }
-
-    pub fn save_state(&mut self) -> anyhow::Result<()> {
-        // let path = save_path();
-        // let json = serde_json::to_string_pretty(&self.state)?;
-        // let tmp_path = path.with_extension("tmp");
-        // std::fs::write(&tmp_path, json)?;
-
-        // // 2. Renommer atomiquement → remplace l'ancien fichier d'un coup
-        // std::fs::rename(&tmp_path, path)?;
-
-        // Ok(())
-        println!("entire save of state deactivated");
-        Ok(())
-    }
-
-    // pub fn open_file(&mut self, file_path: PathBuf) {
-    //     // println!("file path: {:?}", file_path);
-    //     // let json = std::fs::read_to_string(&file_path).unwrap_or_default();
-    //     // let user_file: UserFile = serde_json::from_str(&json).unwrap_or_default()
-    //     let user_file = UserFile::from_path(file_path.clone());
-    //     if user_file.is_err() {
-    //         println!("Could not load file {:?}", file_path);
-    //     }
-    //     self.state.current_file = Some(user_file.unwrap());
-    // }
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
@@ -240,9 +233,7 @@ impl eframe::App for App {
         // println!("viewport {}", ViewportId::ROOT);
         self.debug_info.lines = vec![];
         // ui.ctx().set_cursor_icon(self.state.cursor_icon);
-        if self.stylet_manager.stylet.pressed {
-            ui.ctx().set_cursor_icon(egui::CursorIcon::None);
-        }
+        println!("{}", self.stylet_manager.stylet.pressed);
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);
@@ -284,6 +275,14 @@ impl eframe::App for App {
                     }
                 });
             });
+
+        if self.stylet_manager.stylet.pressed {
+            ui.ctx().input_mut(|i| {
+                i.pointer = egui::PointerState::default(); // efface le pointer souris
+            });
+
+            ui.ctx().set_cursor_icon(egui::CursorIcon::None);
+        }
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {

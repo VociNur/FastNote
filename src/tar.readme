@@ -1,0 +1,10 @@
+Note fichier tar:
+
+Créer:
+tar -czf backup.tar.gz notes/
+
+Restaurer:
+tar -xzf backup.tar.gz
+
+Voir le contenu:
+tar -tzf backup.tar.gz

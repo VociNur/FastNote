@@ -4,21 +4,20 @@ antialiasing is not working ?
 
 
 ++
-remove mouse
 settings pour theme + basic white theme
 images
 move strokes
 move screen with touchpad
 move file/folder/project
 pdf export/img export
-save on another server
 page color/ space between lines
+command with "/"
+save on another server
 
 
 
-
-
-
+remove mouse when drawing -> not a problem
+resize left panel -> temporar solution 
 
 
 

@@ -25,7 +25,11 @@ pub fn draw_left(ui: &mut egui::Ui, app: &mut App) {
                 _ => draw_home_menu_left(ui, app),
             }
         });
-    if app.state.get_menu() != MenuMode::File && !app.state.current_fastnote_file.is_none() {
+
+    if app.state.show_left
+        && app.state.get_menu() != MenuMode::File
+        && !app.state.current_fastnote_file.is_none()
+    {
         egui::Panel::left("left_panel_secondary")
             .resizable(true)
             .show(ui, |ui| {
@@ -343,6 +347,18 @@ fn find_file_rec(entries: &mut Vec<FolderEntry>, path: PathBuf) -> Option<&mut F
 }
 
 pub fn draw_tree(ui: &mut egui::Ui, flat: &mut Vec<FlatNode>, app: &mut App) {
+    let show_menu_button =
+        egui::Image::new(&app.icons.plus).fit_to_exact_size(egui::vec2(32.0, 32.0));
+    let show_menu_button = ui.add_sized(
+        [32.0, 32.0],
+        egui::Button::image(show_menu_button).frame(false),
+    );
+    if show_menu_button.clicked() {
+        app.state.show_left = !app.state.show_left;
+    }
+    if !app.state.show_left {
+        return;
+    }
     let response = egui_dnd::dnd(ui, "fastnote_tree").show_vec(flat, |ui, item, handle, _state| {
         ui.horizontal(|ui| {
             ui.add_space(item.depth as f32 * 20.0);

@@ -1,8 +1,16 @@
 // #![warn(clippy::all, rust_2018_idioms)]
 
-use std::path::PathBuf;
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+};
 
+use chrono::{Local, NaiveDate};
 use eframe::egui::{self, Color32};
+use flate2::{write::GzEncoder, Compression};
+use tar::Builder;
+
+use crate::paths::{PROJECT_DEFAULT_FOLDER, SAVE_DEFAULT_FOLDER};
 
 // use egui::Color32;
 pub mod app;
@@ -19,6 +27,49 @@ pub mod strokes;
 pub mod stylet;
 pub mod themes;
 pub mod ui;
+
+fn get_last_save() -> Option<NaiveDate> {
+    let save_folder = get_working_path().join(SAVE_DEFAULT_FOLDER);
+    if fs::create_dir_all(&save_folder).is_err() {
+        return None;
+    }
+    let entries = fs::read_dir(save_folder).ok()?;
+    let mut latest: Option<NaiveDate> = None;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let filename = path.file_name()?.to_string_lossy();
+
+        // On attend un format du type "2026-09-12.zip"
+        if let Some(date_str) = filename.strip_suffix(".zip") {
+            if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                if latest.map_or(true, |d| date > d) {
+                    latest = Some(date);
+                }
+            }
+        }
+    }
+
+    latest
+}
+
+pub fn create_backup_notes_directory() -> anyhow::Result<()> {
+    let save_folder = get_working_path().join(SAVE_DEFAULT_FOLDER);
+    fs::create_dir_all(&save_folder)?;
+
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let backup_path = save_folder.join(format!("{}.tar.gz", today));
+
+    let tar_gz = File::create(&backup_path)?;
+    let enc = GzEncoder::new(tar_gz, Compression::default());
+    let mut tar = Builder::new(enc);
+
+    tar.append_dir_all("projects", get_working_path().join(PROJECT_DEFAULT_FOLDER))?;
+
+    println!("Backup created: {:?}", backup_path);
+    Ok(())
+}
+
 fn get_working_path() -> std::path::PathBuf {
     dirs::data_dir().unwrap_or_else(|| std::path::PathBuf::from("."))
 }
@@ -89,3 +140,29 @@ pub fn is_valid_folder_name(name: &str) -> bool {
 pub fn folder_exists(parent: &PathBuf, name: &str) -> bool {
     parent.join(name).exists()
 }
+
+// pub fn zip_directory(src_dir: &str, dst_file: &str) -> zip::result::ZipResult<()> {
+//     let path = std::path::Path::new(src_dir);
+//     let file = File::create(dst_file)?;
+//     let mut zip = zip::ZipWriter::new(file);
+
+//     let options = FileOptions::default()
+//         .compression_method(zip::CompressionMethod::Deflated)
+//         .unix_permissions(0o755);
+
+//     for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+//         let entry_path = entry.path();
+//         let name = entry_path.strip_prefix(path).unwrap();
+
+//         if entry_path.is_file() {
+//             zip.start_file(name.to_string_lossy(), options)?;
+//             let mut f = File::open(entry_path)?;
+//             std::io::copy(&mut f, &mut zip)?;
+//         } else if !name.as_os_str().is_empty() {
+//             zip.add_directory(name.to_string_lossy(), options)?;
+//         }
+//     }
+
+//     zip.finish()?;
+//     Ok(())
+// }
