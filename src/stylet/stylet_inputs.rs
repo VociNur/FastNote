@@ -1,5 +1,9 @@
 use crate::app::WindowState;
-use crate::stylet::stylet_manager::{AxisEventState, ButtonEventState, MyLibInputEvent, PhaseZoomEventState, ProximityEventState, StyletEvent, TipEventState, TouchpadAxisEventState, TouchpadMoveEventState, TouchpadZoomEventState};
+use crate::stylet::stylet_manager::{
+    AxisEventState, ButtonEventState, MyLibInputEvent, PhaseZoomEventState, ProximityEventState,
+    StyletEvent, TipEventState, TouchpadAxisEventState, TouchpadMoveEventState,
+    TouchpadZoomEventState,
+};
 use std::fs::OpenOptions;
 use std::os::unix::{
     fs::OpenOptionsExt,
@@ -66,6 +70,8 @@ pub fn spawn_pen_thread(
             unsafe { libc::poll(&mut pollfd, 1, -1) };
 
             input.dispatch().unwrap();
+
+            std::thread::sleep(std::time::Duration::from_millis(3));
             let window_pos = window_state.lock().unwrap().pos.clone();
             let mut batch: Vec<MyLibInputEvent> = vec![];
             for event in &mut input {
@@ -193,7 +199,22 @@ pub fn spawn_pen_thread(
                             println!("Gesture: {:?}", gesture);
                         }
                     },
+                    // Hmm, button encoding can be found on:
+                    // https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+                    // Value are hexa: 272=0x110
+                    //
                     Event::Pointer(pointer) => match pointer {
+                        PointerEvent::Button(event) => {
+                            println!("pointer button event : {:?}", event);
+                            println!("click: {:?}", event.button());
+                            println!("click state: {:?}", event.button_state());
+                            if event.button() == 272 {
+                                println!("Left button");
+                            }
+                            if event.button() == 273 {
+                                println!("Right button");
+                            }
+                        }
                         PointerEvent::Motion(pointer_motion_event) => {
                             batch.push(MyLibInputEvent::Touchpad(
                                 crate::stylet::stylet_manager::TouchpadEvent::Move(

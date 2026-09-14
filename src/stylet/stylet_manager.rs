@@ -42,7 +42,7 @@ impl StyletManager {
 
     pub fn manage_touchpad_events(&mut self,
 
-        _ctx: &Context,
+        ctx: &Context,
         state: &mut State,
         _has_focus: &bool,
          event: TouchpadEvent){
@@ -78,6 +78,8 @@ impl StyletManager {
             TouchpadEvent::Move(_move_event_state) => {
                 #[cfg(feature = "debug-input")]
                 println!("move {:?}", move_event_state);
+                let is_left_pressed = ctx.input(|i| i.pointer.primary_down());
+                println!("Moving mouse, is left pressed: {}", is_left_pressed);
                 
             },
         }

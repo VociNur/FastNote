@@ -279,13 +279,13 @@ impl eframe::App for App {
                 });
             });
 
-        if self.stylet_manager.stylet.pressed {
-            ui.ctx().input_mut(|i| {
-                i.pointer = egui::PointerState::default(); // efface le pointer souris
-            });
+        // if self.stylet_manager.stylet.pressed {
+        //     ui.ctx().input_mut(|i| {
+        //         i.pointer = egui::PointerState::default(); // efface le pointer souris
+        //     });
 
-            ui.ctx().set_cursor_icon(egui::CursorIcon::None);
-        }
+        //     ui.ctx().set_cursor_icon(egui::CursorIcon::None);
+        // }
     }
 
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
