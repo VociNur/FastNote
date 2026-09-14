@@ -8,19 +8,14 @@ images
 move strokes
 move file/folder/project
 pdf export/img export
-page color/ space between lines
 command with "/"
 save on another server
-
-
 
 settings pour theme + basic white theme
 remove mouse when drawing -> not a problem
 resize left panel -> temporar solution 
-move screen with touchpad -> will be better later
-
-
-
+move screen with touchpad -> will be better later + SHOULD CHECK IF APP IS ON FOREGROUND!!
+page color/ space between lines -> settings
 
 osef tier
 
@@ -28,6 +23,5 @@ write text
 - color text/
 - underline/bold/etc...
 - introduce typst ?
-
 
 historic of deleted strokes

@@ -1,21 +1,18 @@
 use eframe::egui;
 
-use crate::{app::App, gpu::main_gpu::draw_gpu};
-fn rect_points_to_pixels(rect_points: egui::Rect, ppp: f32) -> egui::Rect {
-    egui::Rect::from_min_max(rect_points.min * ppp, rect_points.max * ppp)
-}
+use crate::{app::App, gpu::main_gpu::draw_gpu, rect_points_to_pixels};
 
 pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
     if app.state.loaded_page.is_some() {
         egui::CentralPanel::default().show(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
             let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
-            app.gpu_rect = Some(pixel_rect);
+            app.state.gpu_rect = Some(pixel_rect);
 
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
             let painter = ui.painter();
 
-            let zoom = app.state.gpu_view.zoom;
+            let zoom = app.state.gpu_view.get_zoom();
             let offset = app.state.gpu_view.top_left; // le décalage actuel
 
             // Lignes horizontales tous les 50 pixels (dans l'espace canvas)

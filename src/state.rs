@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::egui;
+use eframe::{egui, egui::Rect};
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +46,8 @@ pub struct State {
     menu_mode: MenuMode,
     pub theme: ThemeData,
 
+    pub top_level_rect: Option<Rect>,
+    pub gpu_rect: Option<Rect>,
     //File
     pub modal_window: ModalWindow,
     pub opened_projects: OpenedProjectsManager,
@@ -70,6 +72,8 @@ impl Default for State {
     fn default() -> Self {
         let color_palette = ColorPalette::load().unwrap_or(ColorPalette::default());
         Self {
+            top_level_rect: None,
+            gpu_rect: None,
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
             show_left: true,

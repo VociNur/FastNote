@@ -693,7 +693,7 @@ impl egui_wgpu::CallbackTrait for MainCallback {
             bytemuck::bytes_of(&Uniforms {
                 canvas_size: [self.canvas_size.x * ppp, self.canvas_size.y * ppp],
                 view_offset: [self.gpu_view.top_left.x, self.gpu_view.top_left.y],
-                zoom: self.gpu_view.zoom,
+                zoom: self.gpu_view.get_zoom(),
                 subdivisions: self.subdivision,
                 _pad: [0.0, 0.0],
             }),

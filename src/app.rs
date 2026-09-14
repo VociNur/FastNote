@@ -1,5 +1,5 @@
 use chrono::Local;
-use eframe::egui::{self, Pos2, Rect};
+use eframe::egui::{self, Pos2};
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     create_backup_notes_directory, edition::open_edition_mode, errors::DisplayError, get_last_save,
-    projects::loaded_page::LoadedPage, state::State, ui::ui::draw_gui,
+    projects::loaded_page::LoadedPage, rect_points_to_pixels, state::State, ui::ui::draw_gui,
 };
 use crate::{event_managers::finger_manager::FingerManager, icons::Icons};
 use crate::{
@@ -24,7 +24,6 @@ pub struct App {
     pub icons: Icons,
     pub input_manager: FingerManager,
     pub stylet_manager: StyletManager,
-    pub gpu_rect: Option<Rect>,
     pub x_screen_size: u32,
     pub y_screen_size: u32,
     pub window_state: Arc<Mutex<WindowState>>,
@@ -64,7 +63,6 @@ impl App {
             app_have_focus: false,
             state: State::default(),
             icons: icons,
-            gpu_rect: None,
             window_state: Arc::new(Mutex::new(WindowState::default())),
             stylet_manager: StyletManager::default(),
             input_manager: FingerManager::default(),
@@ -148,9 +146,9 @@ impl App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
         self.app_have_focus = has_focus;
-
+        println!("have focus: {}", has_focus);
         self.stylet_manager
-            .manage_events(ctx, &mut self.state, &has_focus, &self.gpu_rect);
+            .manage_events(ctx, &mut self.state, &has_focus);
         // println!("has focus{}", has_focus);
         // if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
         //     println!("Save state");
@@ -230,6 +228,11 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.update(ui.ctx(), frame);
+
+        let rect = ui.available_rect_before_wrap();
+        let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
+        self.state.top_level_rect = Some(pixel_rect);
+
         // println!("viewport {}", ViewportId::ROOT);
         self.debug_info.lines = vec![];
         // ui.ctx().set_cursor_icon(self.state.cursor_icon);

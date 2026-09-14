@@ -28,6 +28,9 @@ pub mod stylet;
 pub mod themes;
 pub mod ui;
 
+fn rect_points_to_pixels(rect_points: egui::Rect, ppp: f32) -> egui::Rect {
+    egui::Rect::from_min_max(rect_points.min * ppp, rect_points.max * ppp)
+}
 fn get_last_save() -> Option<NaiveDate> {
     let save_folder = get_working_path().join(SAVE_DEFAULT_FOLDER);
     if fs::create_dir_all(&save_folder).is_err() {

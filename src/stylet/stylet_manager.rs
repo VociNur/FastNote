@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use eframe::egui::{self, Context, Pos2, Rect, util::id_type_map::TypeId};
+use eframe::egui::{self, Context, Pos2};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
@@ -24,16 +24,15 @@ impl StyletManager {
         ctx: &Context,
         state: &mut State,
         _has_focus: &bool,
-        gpu_rect: &Option<Rect>,
     ) {
         let events = std::mem::take(&mut *self.events.lock().unwrap());
         for event in events {
             match event {
                 MyLibInputEvent::Stylet(stylet_event)=>{
-                    self.manage_stylet_events(ctx, state, _has_focus, gpu_rect, stylet_event);
+                    self.manage_stylet_events(ctx, state, _has_focus, stylet_event);
                 }
                 MyLibInputEvent::Touchpad(touchpad_event)=>{
-                    self.manage_touchpad_events(ctx, state, _has_focus, gpu_rect, touchpad_event);
+                    self.manage_touchpad_events(ctx, state, _has_focus, touchpad_event);
                 }
              }
 
@@ -43,21 +42,21 @@ impl StyletManager {
 
     pub fn manage_touchpad_events(&mut self,
 
-        ctx: &Context,
+        _ctx: &Context,
         state: &mut State,
         _has_focus: &bool,
-        gpu_rect: &Option<Rect>,
          event: TouchpadEvent){
          match event
          {
             TouchpadEvent::Zoom(zoom_event_state) => {
-                println!("{:?}", zoom_event_state);
+                #[cfg(feature = "debug-input")]
+                println!("zoom {:?}", zoom_event_state);
                 match zoom_event_state.phase{
                     PhaseZoomEventState::BEGIN => {
                         state.gpu_view.last_touchpad_zoom = Some(1.);
                     }
                     PhaseZoomEventState::UPDATE => {
-                        state.gpu_view.zoom *= zoom_event_state.scale as f32 / state.gpu_view.last_touchpad_zoom.unwrap_or_else(|| {println!("Error last zoom touchpad not init");1.});
+                        state.gpu_view.mult_zoom( zoom_event_state.scale as f32 / state.gpu_view.last_touchpad_zoom.unwrap_or_else(|| {println!("Error last zoom touchpad not init");1.}));
                         state.gpu_view.last_touchpad_zoom = Some(zoom_event_state.scale as f32);
                         
                     }
@@ -69,10 +68,16 @@ impl StyletManager {
             },
             // top (-) to bot (+)
             // left (-) to right (+)
-            TouchpadEvent::Move(move_event_state) => {
-                println!("{:?}", move_event_state);
-                state.gpu_view.top_left.x -= move_event_state.dy as f32 * state.touchpad_scalor_settings_x;
-                state.gpu_view.top_left.y -= move_event_state.dx as f32 * state.touchpad_scalor_settings_y;
+            TouchpadEvent::Axis(axis_event_state) => {
+                #[cfg(feature = "debug-input")]
+                println!("axis {:?}", axis_event_state);
+                state.gpu_view.top_left.x -= axis_event_state.dy as f32 * state.touchpad_scalor_settings_x;
+                state.gpu_view.top_left.y -= axis_event_state.dx as f32 * state.touchpad_scalor_settings_y;
+                
+            },
+            TouchpadEvent::Move(_move_event_state) => {
+                #[cfg(feature = "debug-input")]
+                println!("move {:?}", move_event_state);
                 
             },
         }
@@ -82,12 +87,11 @@ impl StyletManager {
         ctx: &Context,
         state: &mut State,
         _has_focus: &bool,
-        gpu_rect: &Option<Rect>,
          event: StyletEvent){
         match event{
 
                 StyletEvent::Axis(axis_event_state) => {
-                    self.on_axis_event(ctx, state, &axis_event_state, gpu_rect);
+                    self.on_axis_event(ctx, state, &axis_event_state);
                     self.stylet.pos = axis_event_state.pos;
                     self.stylet.pressure = axis_event_state.pressure;
                     self.stylet.distance = axis_event_state.distance;
@@ -96,7 +100,7 @@ impl StyletManager {
                     self.stylet.tool_type = axis_event_state.tool_type;
                 }
                 StyletEvent::Tip(tip_event_state) => {
-                    self.on_tip_event(ctx, state, &tip_event_state, gpu_rect);
+                    self.on_tip_event(ctx, state, &tip_event_state);
                     self.stylet.pos = tip_event_state.pos;
                     self.stylet.pressure = tip_event_state.pressure;
                     self.stylet.distance = tip_event_state.distance;
@@ -129,7 +133,6 @@ impl StyletManager {
         pos: Pos2,
         pressure: f64,
         tool_type: TabletToolType,
-        opt_gpu_rect: &Option<Rect>,
     ) {
         if !self.stylet.pressed {
             return;
@@ -138,16 +141,16 @@ impl StyletManager {
         // if state.current_file.is_none() {
         //     state.current_file = Some(UserFile::new(PathBuf::from("")));
         // }
-        if opt_gpu_rect.is_none() {
+        if state.gpu_rect.is_none() {
             // println!("Gpu rect is none\n Return\n");
             return;
         }
-        let gpu_rect = opt_gpu_rect.unwrap();
+        let gpu_rect = state.gpu_rect.unwrap();
         // println!("gpu rect {:?} {:?}", gpu_rect, pos);
         if gpu_rect.contains(pos) {
             if let Some(file) = state.loaded_page.as_mut() {
                 let draw_pos =
-                    (pos - gpu_rect.min) / state.gpu_view.zoom + state.gpu_view.top_left.to_vec2();
+                    (pos - gpu_rect.min) / state.gpu_view.get_zoom() + state.gpu_view.top_left.to_vec2();
                 let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
                 if tool_type == TabletToolType::Pen {
                     file.add_stroke_point(stroke_point);
@@ -180,7 +183,6 @@ impl StyletManager {
         ctx: &Context,
         state: &mut State,
         axis_event_state: &AxisEventState,
-        opt_gpu_rect: &Option<Rect>,
     ) {
         // println!("axis: {axis_event_state:?}");
         self.touch_gpu(
@@ -189,7 +191,6 @@ impl StyletManager {
             axis_event_state.pos,
             axis_event_state.pressure,
             axis_event_state.tool_type,
-            opt_gpu_rect,
         );
     }
 
@@ -198,7 +199,6 @@ impl StyletManager {
         ctx: &Context,
         state: &mut State,
         tip_event_state: &TipEventState,
-        opt_gpu_rect: &Option<Rect>,
     ) {
         // println!("tip: {tip_event_state:?}");
         //
@@ -210,7 +210,6 @@ impl StyletManager {
                 tip_event_state.pos,
                 tip_event_state.pressure,
                 tip_event_state.tool_type,
-                opt_gpu_rect,
             );
         } else {
             state.cursor_icon = egui::CursorIcon::Default;
@@ -243,8 +242,9 @@ pub enum StyletEvent {
 }
 
 pub enum TouchpadEvent {
-    Zoom(ZoomEventState),
-    Move(MoveEventState),
+    Zoom(TouchpadZoomEventState),
+    Axis(TouchpadAxisEventState),
+    Move(TouchpadMoveEventState),
 }
 
 
@@ -367,14 +367,14 @@ pub enum PhaseZoomEventState{
 }
 
 #[derive(Debug)]
-pub struct ZoomEventState{
+pub struct TouchpadZoomEventState{
     phase: PhaseZoomEventState,
     dx: f64,
     dy: f64,
     scale: f64,
 }
 
-impl ZoomEventState{
+impl TouchpadZoomEventState{
     pub fn new(phase: PhaseZoomEventState, dx: f64, dy: f64, scale: f64)->Self{
         Self{
             phase, dx, dy, scale,
@@ -383,12 +383,26 @@ impl ZoomEventState{
 }
 
 #[derive(Debug)]
-pub struct MoveEventState{
+pub struct TouchpadAxisEventState{
     dx: f64,
     dy: f64,
 }
 
-impl MoveEventState{
+impl TouchpadAxisEventState{
+    pub fn new(dx: f64, dy: f64)->Self{
+            Self{
+            dx, dy
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TouchpadMoveEventState{
+    dx: f64,
+    dy: f64,
+}
+
+impl TouchpadMoveEventState{
     pub fn new(dx: f64, dy: f64)->Self{
             Self{
             dx, dy

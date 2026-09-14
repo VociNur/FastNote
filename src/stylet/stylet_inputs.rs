@@ -1,9 +1,5 @@
 use crate::app::WindowState;
-use crate::stylet::stylet_manager::{
-    AxisEventState, ButtonEventState, MoveEventState, MyLibInputEvent, PhaseZoomEventState,
-    ProximityEventState, StyletEvent, TipEventState, ZoomEventState,
-};
-use std::any::Any;
+use crate::stylet::stylet_manager::{AxisEventState, ButtonEventState, MyLibInputEvent, PhaseZoomEventState, ProximityEventState, StyletEvent, TipEventState, TouchpadAxisEventState, TouchpadMoveEventState, TouchpadZoomEventState};
 use std::fs::OpenOptions;
 use std::os::unix::{
     fs::OpenOptionsExt,
@@ -18,7 +14,6 @@ use input::event::gesture::{GestureEventCoordinates, GesturePinchEventTrait};
 use input::event::pointer::PointerScrollEvent;
 use input::event::tablet_tool::TabletToolType;
 use input::event::PointerEvent;
-use input::AsRaw;
 use input::{
     event::{
         tablet_tool::{TabletToolEvent, TabletToolEventTrait},
@@ -146,17 +141,22 @@ pub fn spawn_pen_thread(
                     //
                     Event::Gesture(gesture) => match gesture {
                         input::event::GestureEvent::Pinch(pinch) => match pinch {
-                            input::event::gesture::GesturePinchEvent::Begin(begin) => {
+                            input::event::gesture::GesturePinchEvent::Begin(_begin) => {
                                 batch.push(MyLibInputEvent::Touchpad(
                                     crate::stylet::stylet_manager::TouchpadEvent::Zoom(
-                                        ZoomEventState::new(PhaseZoomEventState::BEGIN, 0., 0., 1.),
+                                        TouchpadZoomEventState::new(
+                                            PhaseZoomEventState::BEGIN,
+                                            0.,
+                                            0.,
+                                            1.,
+                                        ),
                                     ),
                                 ));
                             }
                             input::event::gesture::GesturePinchEvent::End(end) => {
                                 batch.push(MyLibInputEvent::Touchpad(
                                     crate::stylet::stylet_manager::TouchpadEvent::Zoom(
-                                        ZoomEventState::new(
+                                        TouchpadZoomEventState::new(
                                             PhaseZoomEventState::END,
                                             0.,
                                             0.,
@@ -174,7 +174,7 @@ pub fn spawn_pen_thread(
                                 println!("gesture pinch update scale {:?}", update.scale());
                                 batch.push(MyLibInputEvent::Touchpad(
                                     crate::stylet::stylet_manager::TouchpadEvent::Zoom(
-                                        ZoomEventState::new(
+                                        TouchpadZoomEventState::new(
                                             PhaseZoomEventState::UPDATE,
                                             update.dx(),
                                             update.dy(),
@@ -194,6 +194,16 @@ pub fn spawn_pen_thread(
                         }
                     },
                     Event::Pointer(pointer) => match pointer {
+                        PointerEvent::Motion(pointer_motion_event) => {
+                            batch.push(MyLibInputEvent::Touchpad(
+                                crate::stylet::stylet_manager::TouchpadEvent::Move(
+                                    TouchpadMoveEventState::new(
+                                        pointer_motion_event.dx(),
+                                        pointer_motion_event.dy(),
+                                    ),
+                                ),
+                            ));
+                        }
                         PointerEvent::ScrollFinger(pointer_scroll_event) => {
                             #[cfg(feature = "debug-input")]
                             println!("tt: {:?}", pointer_scroll_event);
@@ -204,8 +214,8 @@ pub fn spawn_pen_thread(
                                 #[cfg(feature = "debug-input")]
                                 println!("dx: {:?}", dx);
                                 batch.push(MyLibInputEvent::Touchpad(
-                                    crate::stylet::stylet_manager::TouchpadEvent::Move(
-                                        MoveEventState::new(dx, 0.),
+                                    crate::stylet::stylet_manager::TouchpadEvent::Axis(
+                                        TouchpadAxisEventState::new(dx, 0.),
                                     ),
                                 ));
                             }
@@ -217,8 +227,8 @@ pub fn spawn_pen_thread(
                                 #[cfg(feature = "debug-input")]
                                 println!("dy: {:?}", dy);
                                 batch.push(MyLibInputEvent::Touchpad(
-                                    crate::stylet::stylet_manager::TouchpadEvent::Move(
-                                        MoveEventState::new(0., dy),
+                                    crate::stylet::stylet_manager::TouchpadEvent::Axis(
+                                        TouchpadAxisEventState::new(0., dy),
                                     ),
                                 ));
                             }
