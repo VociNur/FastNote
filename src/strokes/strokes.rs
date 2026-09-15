@@ -75,6 +75,10 @@ impl PenStroke {
             if distance_sq(pos, point.pos) < radius_sq {
                 return true;
             }
+            // pourrait aussi bien être utilisé
+            // if (pos.x - point.pos.x) < radius_sq || (pos.y - point.pos.y) < radius_sq {
+            //     return true;
+            // }
         }
         false
     }
