@@ -7,7 +7,8 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
         egui::CentralPanel::default().show(ui, |ui| {
             let rect = ui.available_rect_before_wrap();
             let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
-            app.state.gpu_rect = Some(pixel_rect);
+            app.state.gpu_rect_pix = Some(pixel_rect);
+            app.state.gpu_rect_egui = Some(rect);
 
             ui.painter().rect_filled(rect, 0.0, egui::Color32::WHITE);
             let painter = ui.painter();
@@ -58,6 +59,26 @@ pub fn draw_ui_gpu(ui: &mut egui::Ui, app: &mut App) {
                     egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0, 255, 0)),
                 );
                 x += line_spacing / ui.pixels_per_point();
+            }
+            if let (Some(start), Some(current)) = (
+                app.state.start_pos_touchpad_pix,
+                app.state.current_pos_touchpad_pix,
+            ) {
+                println!("draw a blue rectangle");
+                let selection = egui::Rect::from_two_pos(start, current);
+
+                painter.rect_stroke(
+                    selection,
+                    0.0,
+                    egui::Stroke::new(2.0, egui::Color32::from_rgb(0, 150, 255)), // bleu
+                    egui::StrokeKind::Outside,
+                );
+
+                painter.rect_filled(
+                    selection,
+                    0.0,
+                    egui::Color32::from_rgba_unmultiplied(0, 150, 255, 40), // bleu transparent
+                );
             }
             draw_gpu(ui, app, rect);
             // -------------- DEBUG -----------

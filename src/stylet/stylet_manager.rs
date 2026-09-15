@@ -3,7 +3,7 @@ use std::{
     time::Instant,
 };
 
-use eframe::egui::{self, Context, Pos2};
+use eframe::egui::{self, Context, Pos2, Vec2};
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
@@ -25,6 +25,7 @@ impl StyletManager {
         state: &mut State,
         _has_focus: &bool,
     ) {
+
         let events = std::mem::take(&mut *self.events.lock().unwrap());
         for event in events {
             match event {
@@ -53,11 +54,19 @@ impl StyletManager {
                 println!("zoom {:?}", zoom_event_state);
                 match zoom_event_state.phase{
                     PhaseZoomEventState::BEGIN => {
-                        state.gpu_view.last_touchpad_zoom = Some(1.);
+                        let pos_opt = ctx.input(|i| i.pointer.hover_pos());
+                        // println!("Position mouse: {:?}", pos_opt);
+                        if state.app_have_focus && pos_opt.is_some(){
+                            state.gpu_view.last_touchpad_zoom = Some(1.);
+                            
+                        }
                     }
                     PhaseZoomEventState::UPDATE => {
-                        state.gpu_view.mult_zoom( zoom_event_state.scale as f32 / state.gpu_view.last_touchpad_zoom.unwrap_or_else(|| {println!("Error last zoom touchpad not init");1.}));
-                        state.gpu_view.last_touchpad_zoom = Some(zoom_event_state.scale as f32);
+                        if let Some(last_zoom) = state.gpu_view.last_touchpad_zoom {
+                            
+                            state.gpu_view.mult_zoom( zoom_event_state.scale as f32 / last_zoom);
+                            state.gpu_view.last_touchpad_zoom = Some(zoom_event_state.scale as f32);
+                        }
                         
                     }
                     PhaseZoomEventState::END => {
@@ -71,15 +80,36 @@ impl StyletManager {
             TouchpadEvent::Axis(axis_event_state) => {
                 #[cfg(feature = "debug-input")]
                 println!("axis {:?}", axis_event_state);
-                state.gpu_view.top_left.x -= axis_event_state.dy as f32 * state.touchpad_scalor_settings_x;
-                state.gpu_view.top_left.y -= axis_event_state.dx as f32 * state.touchpad_scalor_settings_y;
+
+                let pos_opt = ctx.input(|i| i.pointer.hover_pos());
+                if pos_opt.is_some(){
+                    state.gpu_view.top_left.x -= axis_event_state.dy as f32 * state.touchpad_scalor_settings_x;
+                    state.gpu_view.top_left.y -= axis_event_state.dx as f32 * state.touchpad_scalor_settings_y;
+                }
                 
             },
-            TouchpadEvent::Move(_move_event_state) => {
+            TouchpadEvent::Move(move_event_state) => {
                 #[cfg(feature = "debug-input")]
                 println!("move {:?}", move_event_state);
+                
                 let is_left_pressed = ctx.input(|i| i.pointer.primary_down());
-                println!("Moving mouse, is left pressed: {}", is_left_pressed);
+                // println!("Moving mouse, is left pressed: {}", is_left_pressed);
+                if is_left_pressed{
+                    if let Some(current_mouse) = state.current_pos_touchpad_pix{
+                        // state.current_pos_touchpad_pix = Some(Pos2::new(current_mouse.x + (move_event_state.dx as f32)/ctx.pixels_per_point(), current_mouse.y + (move_event_state.dy as f32)/ctx.pixels_per_point()));
+                        // state.current_pos_touchpad_pix = Some(Pos2::new(current_mouse.x + (move_event_state.dx as f32), current_mouse.y + (move_event_state.dy as f32)));
+                        state.current_pos_touchpad_pix = ctx.input(|i| i.pointer.hover_pos());
+                    }else{
+
+                        let pos = ctx.input(|i| i.pointer.hover_pos());
+                        
+                        state.start_pos_touchpad_pix = pos;
+                        state.current_pos_touchpad_pix = pos;
+                    }
+                }else{
+                        state.start_pos_touchpad_pix = None;
+                        state.current_pos_touchpad_pix = None;
+                }
                 
             },
         }
@@ -143,11 +173,11 @@ impl StyletManager {
         // if state.current_file.is_none() {
         //     state.current_file = Some(UserFile::new(PathBuf::from("")));
         // }
-        if state.gpu_rect.is_none() {
+        if state.gpu_rect_pix.is_none() {
             // println!("Gpu rect is none\n Return\n");
             return;
         }
-        let gpu_rect = state.gpu_rect.unwrap();
+        let gpu_rect = state.gpu_rect_pix.unwrap();
         // println!("gpu rect {:?} {:?}", gpu_rect, pos);
         if gpu_rect.contains(pos) {
             if let Some(file) = state.loaded_page.as_mut() {

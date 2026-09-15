@@ -19,7 +19,6 @@ use crate::{stylet::stylet_manager::StyletManager, ui::ui::draw_error_banner};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
-    pub app_have_focus: bool,
     pub state: State,
     pub icons: Icons,
     pub input_manager: FingerManager,
@@ -60,7 +59,6 @@ pub struct WindowState {
 impl App {
     fn default(icons: Icons) -> Self {
         Self {
-            app_have_focus: false,
             state: State::default(),
             icons: icons,
             window_state: Arc::new(Mutex::new(WindowState::default())),
@@ -145,7 +143,8 @@ impl App {
 
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         let has_focus = ctx.input(|i| i.focused);
-        self.app_have_focus = has_focus;
+        self.state.app_have_focus = has_focus;
+        #[cfg(feature = "debug-input")]
         println!("have focus: {}", has_focus);
         self.stylet_manager
             .manage_events(ctx, &mut self.state, &has_focus);
@@ -164,6 +163,23 @@ impl App {
         //         println!("zero");
         //         egui::Pos2::ZERO
         //     });
+        //
+        //
+        #[cfg(feature = "debug-input")]
+        {
+            let left_down = ctx.input(|i| i.pointer.primary_down());
+            let right_down = ctx.input(|i| i.pointer.secondary_down());
+            let left_clicked = ctx.input(|i| i.pointer.primary_clicked());
+            let right_clicked = ctx.input(|i| i.pointer.secondary_clicked());
+
+            println!(
+                "{} {} {} {}",
+                left_down, right_down, left_clicked, right_clicked
+            );
+
+        }
+
+
         let window2 = frame.winit_window().unwrap().inner_position().unwrap();
         // println!("window_pos2: {:?}", window2);
 
@@ -231,12 +247,13 @@ impl eframe::App for App {
 
         let rect = ui.available_rect_before_wrap();
         let pixel_rect = rect_points_to_pixels(rect, ui.pixels_per_point());
-        self.state.top_level_rect = Some(pixel_rect);
+        self.state.top_level_rect_egui = Some(rect);
+        self.state.top_level_rect_pix = Some(pixel_rect);
 
         // println!("viewport {}", ViewportId::ROOT);
         self.debug_info.lines = vec![];
         // ui.ctx().set_cursor_icon(self.state.cursor_icon);
-        println!("{}", self.stylet_manager.stylet.pressed);
+        // println!("{}", self.stylet_manager.stylet.pressed);
 
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = egui::Color32::from_rgb(77, 79, 83);

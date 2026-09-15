@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::{egui, egui::Rect};
+use eframe::egui::{self, Pos2, Rect};
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
@@ -46,8 +46,10 @@ pub struct State {
     menu_mode: MenuMode,
     pub theme: ThemeData,
 
-    pub top_level_rect: Option<Rect>,
-    pub gpu_rect: Option<Rect>,
+    pub top_level_rect_egui: Option<Rect>,
+    pub gpu_rect_egui: Option<Rect>,
+    pub top_level_rect_pix: Option<Rect>,
+    pub gpu_rect_pix: Option<Rect>,
     //File
     pub modal_window: ModalWindow,
     pub opened_projects: OpenedProjectsManager,
@@ -66,14 +68,20 @@ pub struct State {
     pub gpu_view: GpuView,
     pub touchpad_scalor_settings_x: f32,
     pub touchpad_scalor_settings_y: f32,
+    pub app_have_focus: bool,
+
+    pub start_pos_touchpad_pix: Option<Pos2>,
+    pub current_pos_touchpad_pix: Option<Pos2>,
 }
 
 impl Default for State {
     fn default() -> Self {
         let color_palette = ColorPalette::load().unwrap_or(ColorPalette::default());
         Self {
-            top_level_rect: None,
-            gpu_rect: None,
+            top_level_rect_pix: None,
+            gpu_rect_pix: None,
+            top_level_rect_egui: None,
+            gpu_rect_egui: None,
             menu_mode: MenuMode::File,
             theme: ThemeData::default(),
             show_left: true,
@@ -90,6 +98,9 @@ impl Default for State {
             gpu_view: GpuView::default(),
             touchpad_scalor_settings_x: 4., //user will be able to change it
             touchpad_scalor_settings_y: 4.,
+            app_have_focus: false,
+            start_pos_touchpad_pix: None,
+            current_pos_touchpad_pix: None,
         }
     }
 }
