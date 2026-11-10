@@ -1,7 +1,5 @@
-<!-- Utiliser rmp-serde pour les fichiers dessins. -->
+Utiliser rmp-serde pour les fichiers dessins.
 antialiasing is not working ?
-
-
 
 ++
 images

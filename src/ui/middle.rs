@@ -203,7 +203,11 @@ pub fn draw_home_menu_left(ui: &mut egui::Ui, app: &mut App) {
     //         .iter()
     //         .for_each(|p| show_notebook(ui, app, p));
     // });
-    show_notebooks(ui, app);
+    egui::ScrollArea::vertical()
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            show_notebooks(ui, app);
+        });
 }
 pub fn show_notebooks(ui: &mut egui::Ui, app: &mut App) {
     let mut flat = Vec::new();

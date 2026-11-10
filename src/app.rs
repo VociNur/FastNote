@@ -176,9 +176,7 @@ impl App {
                 "{} {} {} {}",
                 left_down, right_down, left_clicked, right_clicked
             );
-
         }
-
 
         let window2 = frame.winit_window().unwrap().inner_position().unwrap();
         // println!("window_pos2: {:?}", window2);
