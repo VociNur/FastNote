@@ -1,0 +1,14 @@
+[package]
+name = "fastnote-state"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+fastnote-domain = { path = "../domain" }
+fastnote-io = { path = "../io" }
+eframe = "0.36.1"
+serde = { version = "1.0.219", features = ["derive"] }
+anyhow = "1"

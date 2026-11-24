@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use eframe::egui::Color32;
 
-use crate::{distance_point_to_segment, distance_sq};
+use crate::geometry::{distance_point_to_segment, distance_sq};
+
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct StrokePoint {
     pub pos: Pos2,

@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{load_persistent_data, projects::chunk::Chunk, save_persistent_data};
+use crate::chunk::Chunk;
 
 pub const CHUNKS_PER_REGION_X: usize = 4;
 pub const CHUNKS_PER_REGION_Y: usize = 4;

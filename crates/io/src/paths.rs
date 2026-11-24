@@ -1,4 +1,6 @@
 
+use std::path::PathBuf;
+
 pub const OPENED_PROJECTS_FILE: &str = "common/opened_projects.json"; // File which contains opened project, must be used with "get_working_path"
 
 
@@ -14,3 +16,12 @@ pub const COLOR_PALETTE : &str = "color_palette.json";
 pub const MAIN_DATA : &str = "main_data.json";
 pub const NOTEBOOK : &str = "notebook";
 pub const TREE_ORDER_FILE: &str = ".fastnote_order";
+
+/// Racine des données persistantes de l'app (dossier data de l'OS).
+pub fn get_working_path() -> PathBuf {
+    dirs::data_dir().unwrap_or_else(|| PathBuf::from("."))
+}
+
+pub fn folder_exists(parent: &PathBuf, name: &str) -> bool {
+    parent.join(name).exists()
+}

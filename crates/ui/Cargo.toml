@@ -1,0 +1,20 @@
+[package]
+name = "fastnote-ui"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+fastnote-domain = { path = "../domain" }
+fastnote-io = { path = "../io" }
+fastnote-state = { path = "../state" }
+fastnote-gpu = { path = "../gpu" }
+fastnote-app = { path = "../app" }
+eframe = "0.36.1"
+egui_dnd = "0.17.0"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+rfd = "0.15"
+chrono = "0.4"
+anyhow = "1"

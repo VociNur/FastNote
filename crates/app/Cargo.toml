@@ -1,0 +1,17 @@
+[package]
+name = "fastnote-app"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+fastnote-domain = { path = "../domain" }
+fastnote-io = { path = "../io" }
+fastnote-state = { path = "../state" }
+fastnote-input = { path = "../input" }
+eframe = "0.36.1"
+chrono = "0.4"
+anyhow = "1"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }

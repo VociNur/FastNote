@@ -7,8 +7,17 @@ license = "MIT OR Apache-2.0"
 include = ["**/*.rs", "Cargo.toml"]
 rust-version = "1.92"
 
+[workspace]
+members = ["crates/*"]
 
 [dependencies]
+fastnote-domain = { path = "crates/domain" }
+fastnote-io = { path = "crates/io" }
+fastnote-gpu = { path = "crates/gpu" }
+fastnote-state = { path = "crates/state" }
+fastnote-input = { path = "crates/input" }
+fastnote-ui = { path = "crates/ui" }
+fastnote-app = { path = "crates/app" }
 walkdir = "2.3"
 flate2 = "1.0"
 tar = "0.4"

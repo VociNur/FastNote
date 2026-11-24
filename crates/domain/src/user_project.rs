@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use egui::Color32;
 use serde::{Deserialize, Serialize};
 
-use crate::{paths::MAIN_DATA, save_persistent_data};
-
 #[derive(Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct UserProject {

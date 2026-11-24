@@ -1292,6 +1292,13 @@ dependencies = [
  "egui-wgpu",
  "egui_dnd",
  "env_logger",
+ "fastnote-app",
+ "fastnote-domain",
+ "fastnote-gpu",
+ "fastnote-input",
+ "fastnote-io",
+ "fastnote-state",
+ "fastnote-ui",
  "flate2",
  "image",
  "input",
@@ -1304,6 +1311,95 @@ dependencies = [
  "serde_json",
  "tar",
  "walkdir",
+]
+
+[[package]]
+name = "fastnote-app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "eframe",
+ "fastnote-domain",
+ "fastnote-input",
+ "fastnote-io",
+ "fastnote-state",
+ "image",
+]
+
+[[package]]
+name = "fastnote-domain"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "egui",
+ "rayon",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "fastnote-gpu"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "eframe",
+ "egui-wgpu",
+ "fastnote-domain",
+ "fastnote-state",
+]
+
+[[package]]
+name = "fastnote-input"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "fastnote-domain",
+ "fastnote-state",
+ "input",
+ "libc",
+]
+
+[[package]]
+name = "fastnote-io"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dirs",
+ "fastnote-domain",
+ "flate2",
+ "serde_json",
+ "tar",
+]
+
+[[package]]
+name = "fastnote-state"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "fastnote-domain",
+ "fastnote-io",
+ "serde",
+]
+
+[[package]]
+name = "fastnote-ui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "eframe",
+ "egui_dnd",
+ "fastnote-app",
+ "fastnote-domain",
+ "fastnote-gpu",
+ "fastnote-io",
+ "fastnote-state",
+ "image",
+ "rfd",
 ]
 
 [[package]]

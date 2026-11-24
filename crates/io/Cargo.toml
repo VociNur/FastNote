@@ -1,0 +1,16 @@
+[package]
+name = "fastnote-io"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+fastnote-domain = { path = "../domain" }
+anyhow = "1"
+serde_json = "1"
+chrono = "0.4"
+flate2 = "1"
+tar = "0.4"
+dirs = "5"
