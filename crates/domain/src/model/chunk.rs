@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use rayon::prelude::*;
 
+use crate::model::strokes::strokes::PenStroke;
+
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Chunk {

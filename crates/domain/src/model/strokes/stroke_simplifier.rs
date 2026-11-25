@@ -1,6 +1,6 @@
 use eframe::egui::Pos2;
 
-use crate::strokes::strokes::{PenStroke, StrokePoint};
+use crate::model::strokes::strokes::{PenStroke, StrokePoint};
 
 
 pub fn simplify_stroke_rdp(stroke: &mut PenStroke, epsilon: f32) {

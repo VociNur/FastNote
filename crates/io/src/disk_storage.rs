@@ -22,4 +22,43 @@ impl Storage for DiskStorage {
         std::fs::create_dir_all(path)?;
         Ok(())
     }
+
+    fn save_page(
+        &self,
+        page: &fastnote_domain::model::fastnote_page::FastnotePage,
+    ) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    fn load_page(
+        &self,
+        path: &Path,
+    ) -> anyhow::Result<fastnote_domain::model::fastnote_page::FastnotePage> {
+        todo!()
+    }
+
+    fn save_file(
+        &self,
+        file: &fastnote_domain::model::fastnote_file::FastnoteFile,
+    ) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    fn load_file(
+        &self,
+        path: &Path,
+    ) -> anyhow::Result<fastnote_domain::model::fastnote_file::FastnoteFile> {
+        todo!()
+    }
+
+    fn save_project(
+        &self,
+        path: &fastnote_domain::model::fastnote_project::FastnoteProject,
+    ) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    fn load_project(&self, path: &Path) -> anyhow::Result<()> {
+        todo!()
+    }
 }

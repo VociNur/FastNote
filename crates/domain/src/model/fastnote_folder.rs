@@ -29,7 +29,7 @@ impl std::fmt::Debug for FastnoteFolder {
 
 impl FastnoteFolder {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load(path: PathBuf, storage: SharedStorage) -> anyhow::Result<Self> {
+    pub fn load(storage: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
         let manifest = storage.load_manifest(&manifest_path)?;
 
@@ -40,7 +40,7 @@ impl FastnoteFolder {
             let child_path = entry.path();
 
             if child_path.is_dir() && child_path.join("manifest.json").exists() {
-                children.push(FolderEntry::load(child_path, storage.clone())?);
+                children.push(FolderEntry::load(storage.clone(), child_path)?);
             }
         }
 

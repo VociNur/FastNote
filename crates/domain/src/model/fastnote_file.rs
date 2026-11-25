@@ -26,9 +26,9 @@ impl std::fmt::Debug for FastnoteFile {
 
 impl FastnoteFile {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load(path: PathBuf, storage: SharedStorage) -> anyhow::Result<Self> {
+    pub fn load(sm: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
-        let manifest = storage.load_manifest(&manifest_path)?;
+        let manifest = sm.load_manifest(&manifest_path)?;
 
         let mut children = vec![];
         // Parcourir les sous-dossiers du fichier
@@ -38,7 +38,7 @@ impl FastnoteFile {
             // On ne charge que les dossiers contenant un manifest.json
             if child_path.is_dir() && child_path.join("manifest.json").exists() {
                 // Lire le manifest du dossier enfant
-                let child_manifest = storage.load_manifest(&child_path.join("manifest.json"))?;
+                let child_manifest = sm.load_manifest(&child_path.join("manifest.json"))?;
 
                 match child_manifest.r#type {
                     ItemType::Page => {
@@ -61,7 +61,7 @@ impl FastnoteFile {
                         }
 
                         // Charger la page
-                        let page = FastnotePage::load(child_path.clone(), storage.clone())?;
+                        let page = FastnotePage::load(sm.clone(), child_path.clone())?;
                         children.push(page);
                     }
 
@@ -77,7 +77,7 @@ impl FastnoteFile {
             path,
             manifest,
             children,
-            storage,
+            storage: sm,
         };
         s.update_page_order();
         Ok(s)
@@ -109,7 +109,7 @@ impl FastnoteFile {
             path,
             manifest,
             children: vec![],
-            storage,
+            storage: storage,
         };
         file.save()?;
         Ok(file)

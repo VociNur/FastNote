@@ -5,7 +5,12 @@ use egui;
 use egui::Color32;
 use serde::{Deserialize, Serialize};
 
-use crate::{model::{fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, fastnote_page::FastnotePage}, storage::SharedStorage};
+use crate::{
+    model::{
+        fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, fastnote_page::FastnotePage,
+    },
+    storage::SharedStorage,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ItemType {
@@ -34,14 +39,22 @@ impl std::fmt::Debug for FastnoteProject {
 }
 
 impl FastnoteProject {
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> anyhow::Result<()> {
         let manifest_path = self.path.join("manifest.json");
-        let json = serde_json::to_string_pretty(&self.manifest)?;
-        save_persistent_data(manifest_path, &json);
+        // let json = serde_json::to_string_pretty(&self.manifest)?;
+        // save_persistent_data(manifest_path, &json);
+        self.storage.save_manifest(&manifest_path, &self.manifest)?;
+        //rep
         Ok(())
     }
 
-    pub fn create_blank(path: PathBuf, name: String, color: Color32) -> anyhow::Result<Self> {
+    pub fn create_blank(
+        storage: SharedStorage,
+        path: PathBuf,
+        name: String,
+        color: Color32,
+    ) -> anyhow::Result<Self> {
         std::fs::create_dir_all(&path)?;
 
         let manifest = Manifest {
@@ -56,15 +69,18 @@ impl FastnoteProject {
             path,
             manifest,
             children: vec![],
+            storage: storage,
         };
         project.save()?;
         Ok(project)
     }
 
-    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
+    pub fn load(storage: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
-        let json = load_persistent_data(manifest_path)?;
-        let manifest: Manifest = serde_json::from_str(&json)?;
+        // let json = load_persistent_data(manifest_path)?;
+        // let manifest: Manifest = serde_json::from_str(&json)?;
+        let manifest = storage.load_manifest(&manifest_path)?;
         let mut children = vec![];
         // Parcourir les entrées du dossier
         for entry in std::fs::read_dir(&path)? {
@@ -73,7 +89,7 @@ impl FastnoteProject {
 
             // On ne charge que les dossiers contenant un manifest.json
             if child_path.is_dir() && child_path.join("manifest.json").exists() {
-                children.push(FolderEntry::load(child_path)?);
+                children.push(FolderEntry::load(storage.clone(), child_path)?);
             }
         }
 
@@ -81,6 +97,7 @@ impl FastnoteProject {
             path,
             manifest,
             children,
+            storage,
         };
         Ok(s)
     }
