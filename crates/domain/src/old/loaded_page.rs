@@ -142,146 +142,6 @@ impl LoadedPage {
         self.redraw_finished = true;
     }
 }
-/*Premier plan théorique donné à copilot, p
-pub fn distribute_stroke_into_chunks(&mut self, stroke: PenStroke) {
-    let points = &stroke.points;
-    if points.len() < 4 {
-        return;
-    }
-
-    // Chunk courant et points accumulés pour ce chunk
-    let mut current_chunk: Option<(i32, i32, usize)> = None;
-    let mut temp_points: Vec<StrokePoint> = Vec::new();
-
-    // Parcours par fenêtres de 4 points : ABCD, BCDE, CDEF, ...
-    for window in points.windows(4) {
-        let a = window[0].clone();
-        let b = window[1].clone();
-        let c = window[2].clone();
-        let d = window[3].clone();
-
-        // On regarde dans quels chunks va cette fenêtre
-        let chunks = Self::window_chunks(&[a.clone(), b.clone(), c.clone(), d.clone()]);
-
-        match (current_chunk, chunks.as_slice()) {
-            // Premier window : on initialise
-            (None, [chunk1]) => {
-                current_chunk = Some(*chunk1);
-                temp_points.clear();
-                temp_points.extend_from_slice(&[a, b, c, d]);
-            }
-
-            // Premier window mais déjà deux chunks → on choisit le premier pour démarrer
-            (None, [chunk1, _chunk2]) => {
-                current_chunk = Some(*chunk1);
-                temp_points.clear();
-                temp_points.extend_from_slice(&[a, b, c, d]);
-            }
-
-            // Toujours dans le même chunk → on ajoute juste le nouveau point D
-            (Some(chunk), [only]) if *only == chunk => {
-                temp_points.push(d);
-            }
-
-            // Fenêtre dans chunk courant + un autre chunk → cas UVWX dans chunk 1 et 2
-            (Some(chunk), chunks_arr) if chunks_arr.len() == 2 && chunks_arr.contains(&chunk) => {
-                let other = if chunks_arr[0] == chunk { chunks_arr[1] } else { chunks_arr[0] };
-
-                // On ajoute X (ici d) dans le vec temporaire
-                temp_points.push(d.clone());
-
-                // On sauvegarde le vec temporaire dans le chunk courant
-                Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
-
-                // On vide le vec temporaire et on y met UVWX (ici a b c d) pour le nouveau chunk
-                temp_points.clear();
-                temp_points.extend_from_slice(&[a, b, c, d]);
-                current_chunk = Some(*other);
-            }
-
-            // Changement de chunk simple (ABCD dans chunk1, BCDE dans chunk2)
-            (Some(chunk), [new_chunk]) if *new_chunk != chunk => {
-                // On sauvegarde le vec temporaire dans l’ancien chunk
-                Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
-
-                // Nouveau chunk, nouveau vec temporaire
-                temp_points.clear();
-                temp_points.extend_from_slice(&[a, b, c, d]);
-                current_chunk = Some(*new_chunk);
-            }
-
-            // Cas plus tordu (plus de 2 chunks) → on simplifie : on prend le premier
-            (Some(chunk), chunks_arr) if !chunks_arr.is_empty() => {
-                let new_chunk = chunks_arr[0];
-
-                if new_chunk != chunk {
-                    Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
-                    temp_points.clear();
-                    temp_points.extend_from_slice(&[a, b, c, d]);
-                    current_chunk = Some(new_chunk);
-                } else {
-                    temp_points.push(d);
-                }
-            }
-
-            _ => {}
-        }
-    }
-
-    // À la fin, on pousse le dernier vec temporaire dans le chunk courant
-    if let Some(chunk) = current_chunk {
-        if !temp_points.is_empty() {
-            Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
-        }
-    }
-
-    self.redraw_finished = true;
-}
-
-fn window_chunks(points: &[StrokePoint; 4]) -> Vec<(i32, i32, usize)> {
-    use std::collections::HashSet;
-    let mut set = HashSet::new();
-
-    for p in points {
-        let px = p.pos.x;
-        let py = p.pos.y;
-
-        let rx = (px / REGION_PIXEL_SIZE_X).floor() as i32;
-        let ry = (py / REGION_PIXEL_SIZE_Y).floor() as i32;
-
-        let local_x = px - (rx as f32 * REGION_PIXEL_SIZE_X);
-        let local_y = py - (ry as f32 * REGION_PIXEL_SIZE_Y);
-
-        let cx = (local_x / CHUNK_PIXEL_SIZE_X).floor() as usize;
-        let cy = (local_y / CHUNK_PIXEL_SIZE_Y).floor() as usize;
-
-        if cx < CHUNKS_PER_REGION_X && cy < CHUNKS_PER_REGION_Y {
-            let chunk_index = cy * CHUNKS_PER_REGION_X + cx;
-            set.insert((rx, ry, chunk_index));
-        }
-    }
-
-    set.into_iter().collect()
-}
-
-fn push_temp_to_chunk(
-    &mut self,
-    stroke: &PenStroke,
-    chunk_id: (i32, i32, usize),
-    temp_points: &Vec<StrokePoint>,
-) {
-    let (rx, ry, chunk_index) = chunk_id;
-    let region = self.regions.get_ensure_loaded_region_mut(rx, ry);
-    let chunk = &mut region.chunks[chunk_index];
-
-    chunk.strokes.push(PenStroke {
-        color: stroke.color,
-        size: stroke.size,
-        deleted: false,
-        bbox: stroke.bbox, // tu peux recalculer si tu veux
-        points: temp_points.clone(),
-    });
-}*/
 impl LoadedPage {
     pub fn distribute_stroke_into_chunks(&mut self, stroke: PenStroke) {
         let pts = &stroke.points;
@@ -428,3 +288,146 @@ pub fn region_of_top_left(top_left_pos: Pos2) -> (i32, i32) {
 
     (rx, ry)
 }
+
+
+
+/*Premier plan théorique donné à copilot, p
+pub fn distribute_stroke_into_chunks(&mut self, stroke: PenStroke) {
+    let points = &stroke.points;
+    if points.len() < 4 {
+        return;
+    }
+
+    // Chunk courant et points accumulés pour ce chunk
+    let mut current_chunk: Option<(i32, i32, usize)> = None;
+    let mut temp_points: Vec<StrokePoint> = Vec::new();
+
+    // Parcours par fenêtres de 4 points : ABCD, BCDE, CDEF, ...
+    for window in points.windows(4) {
+        let a = window[0].clone();
+        let b = window[1].clone();
+        let c = window[2].clone();
+        let d = window[3].clone();
+
+        // On regarde dans quels chunks va cette fenêtre
+        let chunks = Self::window_chunks(&[a.clone(), b.clone(), c.clone(), d.clone()]);
+
+        match (current_chunk, chunks.as_slice()) {
+            // Premier window : on initialise
+            (None, [chunk1]) => {
+                current_chunk = Some(*chunk1);
+                temp_points.clear();
+                temp_points.extend_from_slice(&[a, b, c, d]);
+            }
+
+            // Premier window mais déjà deux chunks → on choisit le premier pour démarrer
+            (None, [chunk1, _chunk2]) => {
+                current_chunk = Some(*chunk1);
+                temp_points.clear();
+                temp_points.extend_from_slice(&[a, b, c, d]);
+            }
+
+            // Toujours dans le même chunk → on ajoute juste le nouveau point D
+            (Some(chunk), [only]) if *only == chunk => {
+                temp_points.push(d);
+            }
+
+            // Fenêtre dans chunk courant + un autre chunk → cas UVWX dans chunk 1 et 2
+            (Some(chunk), chunks_arr) if chunks_arr.len() == 2 && chunks_arr.contains(&chunk) => {
+                let other = if chunks_arr[0] == chunk { chunks_arr[1] } else { chunks_arr[0] };
+
+                // On ajoute X (ici d) dans le vec temporaire
+                temp_points.push(d.clone());
+
+                // On sauvegarde le vec temporaire dans le chunk courant
+                Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
+
+                // On vide le vec temporaire et on y met UVWX (ici a b c d) pour le nouveau chunk
+                temp_points.clear();
+                temp_points.extend_from_slice(&[a, b, c, d]);
+                current_chunk = Some(*other);
+            }
+
+            // Changement de chunk simple (ABCD dans chunk1, BCDE dans chunk2)
+            (Some(chunk), [new_chunk]) if *new_chunk != chunk => {
+                // On sauvegarde le vec temporaire dans l’ancien chunk
+                Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
+
+                // Nouveau chunk, nouveau vec temporaire
+                temp_points.clear();
+                temp_points.extend_from_slice(&[a, b, c, d]);
+                current_chunk = Some(*new_chunk);
+            }
+
+            // Cas plus tordu (plus de 2 chunks) → on simplifie : on prend le premier
+            (Some(chunk), chunks_arr) if !chunks_arr.is_empty() => {
+                let new_chunk = chunks_arr[0];
+
+                if new_chunk != chunk {
+                    Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
+                    temp_points.clear();
+                    temp_points.extend_from_slice(&[a, b, c, d]);
+                    current_chunk = Some(new_chunk);
+                } else {
+                    temp_points.push(d);
+                }
+            }
+
+            _ => {}
+        }
+    }
+
+    // À la fin, on pousse le dernier vec temporaire dans le chunk courant
+    if let Some(chunk) = current_chunk {
+        if !temp_points.is_empty() {
+            Self::push_temp_to_chunk(self, &stroke, chunk, &temp_points);
+        }
+    }
+
+    self.redraw_finished = true;
+}
+
+fn window_chunks(points: &[StrokePoint; 4]) -> Vec<(i32, i32, usize)> {
+    use std::collections::HashSet;
+    let mut set = HashSet::new();
+
+    for p in points {
+        let px = p.pos.x;
+        let py = p.pos.y;
+
+        let rx = (px / REGION_PIXEL_SIZE_X).floor() as i32;
+        let ry = (py / REGION_PIXEL_SIZE_Y).floor() as i32;
+
+        let local_x = px - (rx as f32 * REGION_PIXEL_SIZE_X);
+        let local_y = py - (ry as f32 * REGION_PIXEL_SIZE_Y);
+
+        let cx = (local_x / CHUNK_PIXEL_SIZE_X).floor() as usize;
+        let cy = (local_y / CHUNK_PIXEL_SIZE_Y).floor() as usize;
+
+        if cx < CHUNKS_PER_REGION_X && cy < CHUNKS_PER_REGION_Y {
+            let chunk_index = cy * CHUNKS_PER_REGION_X + cx;
+            set.insert((rx, ry, chunk_index));
+        }
+    }
+
+    set.into_iter().collect()
+}
+
+fn push_temp_to_chunk(
+    &mut self,
+    stroke: &PenStroke,
+    chunk_id: (i32, i32, usize),
+    temp_points: &Vec<StrokePoint>,
+) {
+    let (rx, ry, chunk_index) = chunk_id;
+    let region = self.regions.get_ensure_loaded_region_mut(rx, ry);
+    let chunk = &mut region.chunks[chunk_index];
+
+    chunk.strokes.push(PenStroke {
+        color: stroke.color,
+        size: stroke.size,
+        deleted: false,
+        bbox: stroke.bbox, // tu peux recalculer si tu veux
+        points: temp_points.clone(),
+    });
+}*/

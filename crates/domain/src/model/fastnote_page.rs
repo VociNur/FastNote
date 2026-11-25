@@ -3,7 +3,8 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use egui::Color32;
 
-use crate::fastnote_project::{ItemType, Manifest};
+use crate::model::fastnote_manifest::Manifest;
+use crate::model::fastnote_project::ItemType;
 use crate::storage::SharedStorage;
 #[derive(Debug, Clone)]
 pub struct FastnotePage {
@@ -11,24 +12,8 @@ pub struct FastnotePage {
     pub manifest: Manifest,
     pub sm: SharedStorage,
 }
-impl FolderEntry {
-    pub fn load(path: PathBuf) -> anyhow::Result<Self> {
-        // Charger le manifest du dossier/fichier
-        let manifest_path = path.join("manifest.json");
-        let json = load_persistent_data(manifest_path)?;
-        let manifest: Manifest = serde_json::from_str(&json)?;
-
-        match manifest.r#type {
-            ItemType::Folder => Ok(FolderEntry::Folder(FastnoteFolder::load(path)?)),
-            ItemType::File => Ok(FolderEntry::File(FastnoteFile::load(path)?)),
-            _ => Err(anyhow::anyhow!(
-                "FolderEntry::load: type {:?} invalide pour un enfant",
-                manifest.r#type
-            )),
-        }
-    }
-}
 impl FastnotePage {
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn load(sm: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         // page.fn → page.json
         let manifest_path = path.join("manifest.json");
@@ -38,6 +23,7 @@ impl FastnotePage {
 
         Ok(Self { path, manifest, sm })
     }
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> Result<()> {
         let manifest_path = self.path.join("manifest.json");
         // let json = serde_json::to_string_pretty(&self.manifest)?;

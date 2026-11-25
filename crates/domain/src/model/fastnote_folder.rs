@@ -1,3 +1,13 @@
+use anyhow::Result;
+use egui::Color32;
+use std::path::PathBuf;
+
+use crate::{
+    model::{
+        fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, fastnote_project::ItemType,
+    },
+    storage::SharedStorage,
+};
 
 #[derive(Clone)]
 pub struct FastnoteFolder {
@@ -18,6 +28,7 @@ impl std::fmt::Debug for FastnoteFolder {
 }
 
 impl FastnoteFolder {
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn load(path: PathBuf, storage: SharedStorage) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
         let manifest = storage.load_manifest(&manifest_path)?;
@@ -43,12 +54,18 @@ impl FastnoteFolder {
         Ok(s)
     }
 
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> Result<()> {
         self.storage
             .save_manifest(&self.path.join("manifest.json"), &self.manifest)
     }
 
-    pub fn create_blank(path: PathBuf, name: String, color: Color32, storage: SharedStorage) -> Result<Self> {
+    pub fn create_blank(
+        path: PathBuf,
+        name: String,
+        color: Color32,
+        storage: SharedStorage,
+    ) -> Result<Self> {
         storage.create_dirs(&path)?;
 
         let manifest = Manifest {

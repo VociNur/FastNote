@@ -1,3 +1,7 @@
+use serde::{Deserialize, Serialize};
+
+use crate::model::fastnote_project::ItemType;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Manifest {

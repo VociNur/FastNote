@@ -1,8 +1,16 @@
+use crate::{
+    model::{fastnote_manifest::Manifest, fastnote_page::FastnotePage, fastnote_project::ItemType},
+    storage::SharedStorage,
+};
+use anyhow::Result;
+use egui::Color32;
+use std::path::PathBuf;
+
 #[derive(Clone)]
 pub struct FastnoteFile {
-    pub path: PathBuf,
-    pub manifest: Manifest,
     pub children: Vec<FastnotePage>,
+    pub manifest: Manifest,
+    pub path: PathBuf,
     pub storage: SharedStorage,
 }
 
@@ -17,6 +25,7 @@ impl std::fmt::Debug for FastnoteFile {
 }
 
 impl FastnoteFile {
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn load(path: PathBuf, storage: SharedStorage) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
         let manifest = storage.load_manifest(&manifest_path)?;
@@ -74,6 +83,7 @@ impl FastnoteFile {
         Ok(s)
     }
 
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> Result<()> {
         self.storage
             .save_manifest(&self.path.join("manifest.json"), &self.manifest)

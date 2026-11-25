@@ -5,7 +5,7 @@ use egui;
 use egui::Color32;
 use serde::{Deserialize, Serialize};
 
-use crate::{fastnote_page::FastnotePage, storage::SharedStorage};
+use crate::{model::{fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, fastnote_page::FastnotePage}, storage::SharedStorage};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum ItemType {
