@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use egui;
@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     model::{
-        fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, fastnote_page::FastnotePage,
+        fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, 
     },
     storage::SharedStorage,
 };
@@ -39,14 +39,18 @@ impl std::fmt::Debug for FastnoteProject {
 }
 
 impl FastnoteProject {
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> anyhow::Result<()> {
-        let manifest_path = self.path.join("manifest.json");
+        // let manifest_path = self.path.join("manifest.json");
         // let json = serde_json::to_string_pretty(&self.manifest)?;
         // save_persistent_data(manifest_path, &json);
-        self.storage.save_manifest(&manifest_path, &self.manifest)?;
+        // self.storage.save_manifest_file(&manifest_path, &self.manifest)?;
         //rep
-        Ok(())
+        // Ok(())
+        self.storage.save_project_file(&self)
+    }
+    pub fn load(storage: SharedStorage, path: &Path) -> anyhow::Result<FastnoteProject>{
+        let project = storage.load_project(path);
+        project
     }
 
     pub fn create_blank(
@@ -71,36 +75,10 @@ impl FastnoteProject {
             children: vec![],
             storage: storage,
         };
-        project.save()?;
+        project.save();
         Ok(project)
     }
 
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load(storage: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
-        let manifest_path = path.join("manifest.json");
-        // let json = load_persistent_data(manifest_path)?;
-        // let manifest: Manifest = serde_json::from_str(&json)?;
-        let manifest = storage.load_manifest(&manifest_path)?;
-        let mut children = vec![];
-        // Parcourir les entrées du dossier
-        for entry in std::fs::read_dir(&path)? {
-            let entry = entry?;
-            let child_path = entry.path();
-
-            // On ne charge que les dossiers contenant un manifest.json
-            if child_path.is_dir() && child_path.join("manifest.json").exists() {
-                children.push(FolderEntry::load(storage.clone(), child_path)?);
-            }
-        }
-
-        let s = Self {
-            path,
-            manifest,
-            children,
-            storage,
-        };
-        Ok(s)
-    }
     pub fn get_name(&self) -> String {
         self.manifest.name.clone()
     }

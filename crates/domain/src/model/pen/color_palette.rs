@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::model::pen::pen::Pen;
+use crate::{model::pen::pen::Pen, storage::SharedStorage};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -8,6 +8,8 @@ pub struct ColorPalette {
     pub pen: Pen,
     pub palette: Vec<Pen>,
     pub is_editing: bool,
+    #[serde(skip)]
+    storage: Option<SharedStorage>,
 }
 
 //recursive loop because of Json !
@@ -30,16 +32,17 @@ impl ColorPalette {
     }
     #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&mut self) -> anyhow::Result<()> {
-        let json = serde_json::to_string_pretty(&self)?;
+        // let json = serde_json::to_string_pretty(&self)?;
         // println!("Saving file: {:?}", self.path);
-        save_persistent_data(get_working_path().join(COLOR_PALETTE), &json);
+        // save_persistent_data(get_working_path().join(COLOR_PALETTE), &json);
+        self.storage.as_ref().unwrap().save_color_palette_file(&self);
         Ok(())
     }
     #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load() -> anyhow::Result<Self> {
+    pub fn load(storage: SharedStorage) -> anyhow::Result<Self> {
         //path here is a file
-        let json = load_persistent_data(get_working_path().join(COLOR_PALETTE))?;
-        let s = serde_json::from_str(&json)?;
-        Ok(s)
+        // let json = load_persistent_data(get_working_path().join(COLOR_PALETTE))?;
+        // let s = serde_json::from_str(&json)?;
+        storage.load_color_palette_file()
     }
 }

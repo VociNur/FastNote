@@ -33,7 +33,7 @@ impl LoadedPage {
             _path: path.clone(),
             current_stroke: vec![],
             redraw_finished: false,
-            regions: RegionCache::new(path.join("regions")),
+            regions: RegionCache::new(LoadedPage),
             clear_buffer_finished: true,
             clear_buffer_current: true,
         }

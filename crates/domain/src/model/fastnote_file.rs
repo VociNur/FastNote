@@ -28,7 +28,7 @@ impl FastnoteFile {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn load(sm: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
-        let manifest = sm.load_manifest(&manifest_path)?;
+        let manifest = sm.load_manifest_file(&manifest_path)?;
 
         let mut children = vec![];
         // Parcourir les sous-dossiers du fichier
@@ -38,7 +38,7 @@ impl FastnoteFile {
             // On ne charge que les dossiers contenant un manifest.json
             if child_path.is_dir() && child_path.join("manifest.json").exists() {
                 // Lire le manifest du dossier enfant
-                let child_manifest = sm.load_manifest(&child_path.join("manifest.json"))?;
+                let child_manifest = sm.load_manifest_file(&child_path.join("manifest.json"))?;
 
                 match child_manifest.r#type {
                     ItemType::Page => {
@@ -86,7 +86,7 @@ impl FastnoteFile {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> Result<()> {
         self.storage
-            .save_manifest(&self.path.join("manifest.json"), &self.manifest)
+            .save_manifest_file(&self.path.join("manifest.json"), &self.manifest)
     }
 
     pub fn create_blank(

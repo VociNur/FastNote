@@ -19,7 +19,7 @@ impl FastnotePage {
         let manifest_path = path.join("manifest.json");
         // let json = load_persistent_data(manifest_path)?;
         // let manifest: Manifest = serde_json::from_str(&json)?;
-        let manifest = sm.load_manifest(&manifest_path)?;
+        let manifest = sm.load_manifest_file(&manifest_path)?;
 
         Ok(Self { path, manifest, sm })
     }
@@ -28,7 +28,7 @@ impl FastnotePage {
         let manifest_path = self.path.join("manifest.json");
         // let json = serde_json::to_string_pretty(&self.manifest)?;
         // save_persistent_data(manifest_path, &json);
-        self.sm.save_manifest(&manifest_path, &self.manifest)?;
+        self.sm.save_manifest_file(&manifest_path, &self.manifest)?;
         Ok(())
     }
     pub fn create_blank(

@@ -1,4 +1,4 @@
-use egui::Pos2;
+use egui::{Color32, Pos2};
 
 pub fn distance_point_to_segment(p: Pos2, a: Pos2, b: Pos2) -> f32 {
     let ab = b - a;
@@ -10,4 +10,8 @@ pub fn distance_point_to_segment(p: Pos2, a: Pos2, b: Pos2) -> f32 {
 
 pub fn distance_sq(a: Pos2, b: Pos2) -> f32 {
     a.distance_sq(b)
+}
+
+fn color_to_rgb(color: &Color32) -> u32 {
+    ((color.r() as u32) << 24) + ((color.g() as u32) << 16) + ((color.b() as u32) << 8) + 255
 }

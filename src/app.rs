@@ -19,6 +19,7 @@ use crate::{stylet::stylet_manager::StyletManager, ui::ui::draw_error_banner};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 pub struct App {
+    pub storage: SharedStorage,
     pub state: State,
     pub icons: Icons,
     pub input_manager: FingerManager,
@@ -59,6 +60,7 @@ pub struct WindowState {
 impl App {
     fn default(icons: Icons) -> Self {
         Self {
+            storage: Storage::new(),
             state: State::default(),
             icons: icons,
             window_state: Arc::new(Mutex::new(WindowState::default())),

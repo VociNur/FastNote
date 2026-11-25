@@ -31,7 +31,7 @@ impl FastnoteFolder {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn load(storage: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
         let manifest_path = path.join("manifest.json");
-        let manifest = storage.load_manifest(&manifest_path)?;
+        let manifest = storage.load_manifest_file(&manifest_path)?;
 
         let mut children = vec![];
 
@@ -57,7 +57,7 @@ impl FastnoteFolder {
     #[deprecated(since = "0.2.0", note = "use sm instead")]
     pub fn save(&self) -> Result<()> {
         self.storage
-            .save_manifest(&self.path.join("manifest.json"), &self.manifest)
+            .save_manifest_file(&self.path.join("manifest.json"), &self.manifest)
     }
 
     pub fn create_blank(

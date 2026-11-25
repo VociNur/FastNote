@@ -1,9 +1,7 @@
-use crate::model::fastnote_manifest::Manifest;
 use crate::model::{
     fastnote_file::FastnoteFile, fastnote_folder::FastnoteFolder, fastnote_project::ItemType,
 };
 use crate::storage::SharedStorage;
-use anyhow::Result;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -26,7 +24,7 @@ impl FolderEntry {
         let manifest_path = path.join("manifest.json");
         // let json = load_persistent_data(manifest_path)?;
         // let manifest: Manifest = serde_json::from_str(&json)?;
-        let manifest = storage.load_manifest(&manifest_path)?;
+        let manifest = storage.load_manifest_file(&manifest_path)?;
 
         match manifest.r#type {
             ItemType::Folder => Ok(FolderEntry::Folder(FastnoteFolder::load(storage, path)?)),

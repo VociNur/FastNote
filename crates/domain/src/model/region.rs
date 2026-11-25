@@ -2,7 +2,10 @@ use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::model::chunk::Chunk;
+use crate::{
+    model::{chunk::Chunk, fastnote_page::FastnotePage},
+    storage::SharedStorage,
+};
 
 pub const CHUNKS_PER_REGION_X: usize = 4;
 pub const CHUNKS_PER_REGION_Y: usize = 4;
@@ -15,13 +18,15 @@ pub const REGION_PIXEL_SIZE_Y: f32 = CHUNK_PIXEL_SIZE_Y * CHUNKS_PER_REGION_Y as
 pub struct RegionCache {
     pub regions: HashMap<(i32, i32), LoadedRegion>,
     pub regions_path: PathBuf,
+    storage: SharedStorage,
 }
 
 impl RegionCache {
-    pub fn new(regions_path: PathBuf) -> Self {
+    pub fn new(storage: SharedStorage, regions_path: PathBuf) -> Self {
         Self {
             regions: HashMap::new(),
             regions_path,
+            storage,
         }
     }
 
@@ -35,9 +40,15 @@ impl RegionCache {
         let region_path = self.regions_path.join(format!("region_{}_{}.json", rx, ry));
 
         let region_response = if region_path.exists() {
-            LoadedRegion::load(self.regions_path.clone(), rx, ry) //pas ouf de réutiliser regions_path, mais osef
+            // LoadedRegion::load(self.regions_path.clone(), rx, ry) //pas ouf de réutiliser regions_path, mais osef
+            self.storage.load_region_file(&self.regions_path, rx, ry)
         } else {
-            Ok(LoadedRegion::new(self.regions_path.clone(), rx, ry))
+            Ok(LoadedRegion::new(
+                self.storage.clone(),
+                self.regions_path.clone(),
+                rx,
+                ry,
+            ))
         };
         let Ok(region) = region_response else {
             println!(
@@ -103,14 +114,17 @@ pub struct LoadedRegion {
     pub rx: i32,
     pub ry: i32,
     pub chunks: Vec<Chunk>, // 16 chunks
+    #[serde(skip)]
+    storage: Option<SharedStorage>,
 }
 
 impl LoadedRegion {
-    pub fn new(region_path: PathBuf, rx: i32, ry: i32) -> Self {
+    pub fn new(storage: SharedStorage, region_path: PathBuf, rx: i32, ry: i32) -> Self {
         let s = Self {
             rx,
             ry,
             chunks: vec![Chunk::new_blank(); 16],
+            storage: Some(storage),
         };
         let res = s.save(region_path.clone());
         if res.is_err() {
@@ -128,14 +142,17 @@ impl LoadedRegion {
         format!("region_{}_{}.json", self.rx, self.ry)
     }
 
-    pub fn filename_from_pos(rx: i32, ry: i32) -> String {
-        format!("region_{}_{}.json", rx, ry)
-    }
-    pub fn load(regions_path: PathBuf, x: i32, y: i32) -> anyhow::Result<Self> {
-        let region_path = regions_path.join(Self::filename_from_pos(x, y));
-        let json = load_persistent_data(region_path)?;
-        let mut region: Self = serde_json::from_str(&json)?;
-
+    #[deprecated(since = "0.2.0", note = "use sm instead")]
+    pub fn load(
+        storage: SharedStorage,
+        regions_path: PathBuf,
+        x: i32,
+        y: i32,
+    ) -> anyhow::Result<Self> {
+        // let region_path = regions_path.join(Self::filename_from_pos(x, y));
+        // let json = load_persistent_data(region_path)?;
+        // let mut region: Self = serde_json::from_str(&json)?;
+        let mut region = storage.load_region_file(&regions_path, x, y)?;
         for chunk in &mut region.chunks {
             chunk.strokes.retain(|s| !s.deleted);
         }
@@ -148,10 +165,10 @@ impl LoadedRegion {
     }
 
     pub fn save(&self, regions_path: PathBuf) -> anyhow::Result<()> {
-        let region_path = regions_path.join(self.filename());
-        let json = serde_json::to_string_pretty(&self)?;
-        save_persistent_data(region_path, &json);
-        Ok(())
+        self.storage
+            .as_ref()
+            .unwrap()
+            .save_region_file(&regions_path, &self)
     }
     pub fn get_chunk(self: &Self, index: usize) -> &Chunk {
         &self.chunks[index]
