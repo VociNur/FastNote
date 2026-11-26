@@ -25,70 +25,6 @@ impl std::fmt::Debug for FastnoteFile {
 }
 
 impl FastnoteFile {
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load(sm: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
-        let manifest_path = path.join("manifest.json");
-        let manifest = sm.load_manifest_file(&manifest_path)?;
-
-        let mut children = vec![];
-        // Parcourir les sous-dossiers du fichier
-        for entry in std::fs::read_dir(&path)? {
-            let entry = entry?;
-            let child_path = entry.path();
-            // On ne charge que les dossiers contenant un manifest.json
-            if child_path.is_dir() && child_path.join("manifest.json").exists() {
-                // Lire le manifest du dossier enfant
-                let child_manifest = sm.load_manifest_file(&child_path.join("manifest.json"))?;
-
-                match child_manifest.r#type {
-                    ItemType::Page => {
-                        // Vérifier la structure obligatoire d'une Page
-                        let regions = child_path.join("regions");
-                        let assets = child_path.join("assets");
-
-                        if !regions.exists() || !assets.exists() {
-                            // Page corrompue → on ne la charge pas
-                            // (tu adapteras la méthode exacte si besoin)
-                            // app.push_unsafe_minute_error(format!(
-                            //     "Page {:?} was corrupted (missing regions/ or assets/)",
-                            //     child_path
-                            // ));
-                            println!(
-                                "Page {:?} was corrupted (missing regions/ or assets/)",
-                                child_path
-                            );
-                            continue;
-                        }
-
-                        // Charger la page
-                        let page = FastnotePage::load(sm.clone(), child_path.clone())?;
-                        children.push(page);
-                    }
-
-                    other => {
-                        // Un File ne doit contenir que des Pages
-                        println!("File {:?} contains invalid child type {:?}", path, other);
-                    }
-                }
-            }
-        }
-
-        let mut s = Self {
-            path,
-            manifest,
-            children,
-            storage: sm,
-        };
-        s.update_page_order();
-        Ok(s)
-    }
-
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn save(&self) -> Result<()> {
-        self.storage
-            .save_manifest_file(&self.path.join("manifest.json"), &self.manifest)
-    }
-
     pub fn create_blank(
         path: PathBuf,
         name: String,
@@ -109,9 +45,9 @@ impl FastnoteFile {
             path,
             manifest,
             children: vec![],
-            storage: storage,
+            storage: storage.clone(),
         };
-        file.save()?;
+        storage.save_file_file(&file)?;
         Ok(file)
     }
 
@@ -161,7 +97,8 @@ impl FastnoteFile {
             .map(|p| p.path.file_name().unwrap().to_str().unwrap().to_owned())
             .collect();
         self.children = final_children;
-        let res = self.save();
+        // let res = self.save();
+        let res = self.storage.save_file_file(&self);
         if let Err(err) = res {
             println!("Error while saving order page: {:?}", err);
         }

@@ -23,3 +23,6 @@ write text
 - introduce typst ?
 
 historic of deleted strokes
+
+
+page/folder/file/project should not have load/save functions. this should be automatic

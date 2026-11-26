@@ -1,10 +1,15 @@
 //! Persistance JSON générique : écriture atomique (tmp + rename) et lecture.
 
+use std::{
+    fs::{self, File},
+    path::Path,
+};
+
 use crate::paths::PROJECT_DEFAULT_FOLDER;
-use std::{fs::{self, File}, path::Path};
 
 use chrono::{Local, NaiveDate};
-use flate2::{Compression, bufread::GzEncoder};
+use flate2::{Compression, write::GzEncoder};
+use tar::Builder;
 
 use crate::paths::SAVE_DEFAULT_FOLDER;
 
@@ -81,4 +86,3 @@ fn get_last_save() -> Option<NaiveDate> {
 
     latest
 }
-

@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    model::{chunk::Chunk, fastnote_page::FastnotePage},
+    model::{chunk::Chunk},
     storage::SharedStorage,
 };
 

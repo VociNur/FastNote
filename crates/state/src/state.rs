@@ -4,15 +4,6 @@ use eframe::egui::{self, Pos2, Rect};
 use egui::Context;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    edition::open_edition_mode,
-    gpu::gpuview::GpuView,
-    pen::color_palette::ColorPalette,
-    projects::{loaded_page::LoadedPage, opened_projects::OpenedProjectsManager},
-    themes::ThemeData,
-    ui::modal_windows::modal_window::ModalWindow,
-};
-
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum MenuMode {
     File,

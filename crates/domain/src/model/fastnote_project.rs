@@ -6,9 +6,7 @@ use egui::Color32;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    model::{
-        fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest, 
-    },
+    model::{fastnote_folderentry::FolderEntry, fastnote_manifest::Manifest},
     storage::SharedStorage,
 };
 
@@ -39,19 +37,19 @@ impl std::fmt::Debug for FastnoteProject {
 }
 
 impl FastnoteProject {
-    pub fn save(&self) -> anyhow::Result<()> {
-        // let manifest_path = self.path.join("manifest.json");
-        // let json = serde_json::to_string_pretty(&self.manifest)?;
-        // save_persistent_data(manifest_path, &json);
-        // self.storage.save_manifest_file(&manifest_path, &self.manifest)?;
-        //rep
-        // Ok(())
-        self.storage.save_project_file(&self)
-    }
-    pub fn load(storage: SharedStorage, path: &Path) -> anyhow::Result<FastnoteProject>{
-        let project = storage.load_project(path);
-        project
-    }
+    // pub fn save(&self) -> anyhow::Result<()> {
+    //     // let manifest_path = self.path.join("manifest.json");
+    //     // let json = serde_json::to_string_pretty(&self.manifest)?;
+    //     // save_persistent_data(manifest_path, &json);
+    //     // self.storage.save_manifest_file(&manifest_path, &self.manifest)?;
+    //     //rep
+    //     // Ok(())
+    //     self.storage.save_project_file(&self)
+    // }
+    // pub fn load(storage: SharedStorage, path: &Path) -> anyhow::Result<FastnoteProject>{
+    //     let project = storage.load_project(path);
+    //     project
+    // }
 
     pub fn create_blank(
         storage: SharedStorage,
@@ -73,9 +71,9 @@ impl FastnoteProject {
             path,
             manifest,
             children: vec![],
-            storage: storage,
+            storage: storage.clone(),
         };
-        project.save();
+        storage.save_project_file(&project);
         Ok(project)
     }
 
@@ -88,12 +86,12 @@ impl FastnoteProject {
 
     pub fn set_name(&mut self, name: String) -> Result<()> {
         self.manifest.name = name;
-        self.save()
+        self.storage.save_project_file(self)
     }
 
     pub fn set_color(&mut self, color: Color32) -> Result<()> {
         self.manifest.color = color;
-        self.save()
+        self.storage.save_project_file(self)
     }
 
     pub fn update_page_order(&mut self) {
@@ -162,7 +160,8 @@ impl FastnoteProject {
             })
             .collect();
         self.children = final_children;
-        let res = self.save();
+        // let res = self.save();
+        let res = self.storage.save_project_file(&self);
         if let Err(err) = res {
             println!("Error while saving order page: {:?}", err);
         }

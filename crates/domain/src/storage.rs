@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::model::fastnote_file::FastnoteFile;
+use crate::model::fastnote_folder::FastnoteFolder;
+use crate::model::fastnote_folderentry::FolderEntry;
 use crate::model::fastnote_manifest::Manifest;
 use crate::model::fastnote_page::FastnotePage;
 use crate::model::fastnote_project::FastnoteProject;
@@ -25,9 +27,13 @@ pub trait Storage: std::fmt::Debug {
     fn save_file_file(&self, file: &FastnoteFile) -> anyhow::Result<()>;
     fn load_file_file(&self, path: &Path) -> anyhow::Result<FastnoteFile>;
 
+    fn save_folder_file(&self, file: &FastnoteFolder) -> anyhow::Result<()>;
+    fn load_folder_file(&self, path: &Path) -> anyhow::Result<FastnoteFolder>;
+
     fn save_project_file(&self, project: &FastnoteProject) -> anyhow::Result<()>;
     fn load_project(&self, path: &Path) -> anyhow::Result<FastnoteProject>;
 
+    fn load_folderentry_file(&self, path: &Path) -> anyhow::Result<FolderEntry>;
     // fn save_pen(&self, path: &FastnoteProject) -> anyhow::Result<()>;
     // fn load_pen(&self, path: &Path) -> anyhow::Result<()>;
 

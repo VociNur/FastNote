@@ -28,38 +28,6 @@ impl std::fmt::Debug for FastnoteFolder {
 }
 
 impl FastnoteFolder {
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn load(storage: SharedStorage, path: PathBuf) -> anyhow::Result<Self> {
-        let manifest_path = path.join("manifest.json");
-        let manifest = storage.load_manifest_file(&manifest_path)?;
-
-        let mut children = vec![];
-
-        for entry in std::fs::read_dir(&path)? {
-            let entry = entry?;
-            let child_path = entry.path();
-
-            if child_path.is_dir() && child_path.join("manifest.json").exists() {
-                children.push(FolderEntry::load(storage.clone(), child_path)?);
-            }
-        }
-
-        let mut s = Self {
-            path,
-            manifest,
-            children,
-            storage,
-        };
-        s.update_page_order();
-        Ok(s)
-    }
-
-    #[deprecated(since = "0.2.0", note = "use sm instead")]
-    pub fn save(&self) -> Result<()> {
-        self.storage
-            .save_manifest_file(&self.path.join("manifest.json"), &self.manifest)
-    }
-
     pub fn create_blank(
         path: PathBuf,
         name: String,
@@ -80,9 +48,10 @@ impl FastnoteFolder {
             path,
             manifest,
             children: vec![],
-            storage,
+            storage: storage.clone(),
         };
-        folder.save()?;
+        // folder.save()?;
+        storage.save_folder_file(&folder);
         Ok(folder)
     }
     //Code "doublon", TODO: retirer
@@ -153,7 +122,7 @@ impl FastnoteFolder {
             })
             .collect();
         self.children = final_children;
-        let res = self.save();
+        let res = self.storage.save_folder_file(&self);
         if let Err(err) = res {
             println!("Error while saving order page: {:?}", err);
         }
