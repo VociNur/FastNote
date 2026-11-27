@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use egui::Color32;
@@ -26,8 +26,6 @@ impl FastnotePage {
             is_open: false,
             order: vec![],
         };
-
-
         let page = Self {
             path: page_path,
             manifest,

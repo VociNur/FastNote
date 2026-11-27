@@ -4,13 +4,6 @@ use eframe::egui::{self, Color32};
 
 use crate::{app::App, folder_exists, is_valid_folder_name, projects::fastnote_page::FastnotePage};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewPageModalWindow {
-    pub parent: PathBuf,
-    pub folder_name: String,  // nom réel du dossier
-    pub display_name: String, // nom personnalisé
-}
-
 impl NewPageModalWindow {
     pub fn new(parent: PathBuf) -> Self {
         Self {

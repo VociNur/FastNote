@@ -4,12 +4,6 @@ use eframe::egui;
 
 use crate::app::App;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewProjectModalWindow {
-    pub name: String,
-    pub color: egui::Color32,
-    pub path: PathBuf,
-}
 
 impl Default for NewProjectModalWindow {
     fn default() -> Self {

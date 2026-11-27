@@ -6,13 +6,6 @@ use crate::{
     app::App, folder_exists, is_valid_folder_name, projects::fastnote_project::FastnoteFile, ui::modal_windows::modal_window::ModalWindow,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewFileModalWindow {
-    pub folder_name: String,  // nom réel du dossier
-    pub display_name: String, // nom personnalisé
-    // pub color: egui::Color32,
-    pub parent: PathBuf,
-}
 
 impl Default for NewFileModalWindow {
     fn default() -> Self {

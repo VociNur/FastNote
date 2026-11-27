@@ -1,14 +1,13 @@
+use crate::main_gpu::Vertex;
+use crate::main_gpu::GpuPoint;
 use bytemuck::{Pod, Zeroable};
 use eframe::{
     egui::{self, Vec2},
     wgpu::util::DeviceExt,
 };
 use egui_wgpu::wgpu;
+use fastnote_state::gpu_view::GpuView;
 
-use crate::{
-    gpu::gpuview::GpuView,
-    gpu::main_gpu::{GpuPoint, Vertex},
-};
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]

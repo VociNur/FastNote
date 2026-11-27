@@ -1,4 +1,3 @@
-use crate::app::WindowState;
 use crate::stylet::stylet_manager::{
     AxisEventState, ButtonEventState, MyLibInputEvent, PhaseZoomEventState, ProximityEventState,
     StyletEvent, TipEventState, TouchpadAxisEventState, TouchpadMoveEventState,

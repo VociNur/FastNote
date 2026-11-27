@@ -24,7 +24,7 @@ pub struct OpenedProjectsManager {
 // }
 
 impl OpenedProjectsManager {
-    fn load(storage: SharedStorage) {
+    pub fn load(storage: SharedStorage) -> OpenedProjectsManager {
         let mut s = OpenedProjectsManager {
             storage: storage.clone(),
             projects: vec![],
@@ -42,6 +42,7 @@ impl OpenedProjectsManager {
         } else {
             println!("Unable to load default opened projects file");
         }
+        s
     }
 
     //devrait save ses fils ?

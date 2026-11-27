@@ -2,20 +2,17 @@ use std::{collections::HashSet, path::PathBuf};
 
 use eframe::egui::Pos2;
 
-use crate::{
-    projects::{
-        chunk::Chunk,
-        region::{
-            RegionCache, CHUNKS_PER_REGION_X, CHUNKS_PER_REGION_Y, CHUNK_PIXEL_SIZE_X,
-            CHUNK_PIXEL_SIZE_Y, REGION_PIXEL_SIZE_X, REGION_PIXEL_SIZE_Y,
-        },
+use crate::{model::{
+    chunk::Chunk,
+    pen::pen::Pen,
+    region::{
+        CHUNK_PIXEL_SIZE_X, CHUNK_PIXEL_SIZE_Y, CHUNKS_PER_REGION_X, CHUNKS_PER_REGION_Y, REGION_PIXEL_SIZE_X, REGION_PIXEL_SIZE_Y, RegionCache
     },
-    state::State,
     strokes::{
         stroke_simplifier::simplify_stroke_rdp,
         strokes::{PenStroke, StrokePoint},
     },
-};
+}, storage::SharedStorage};
 
 #[derive(Debug, Clone)]
 pub struct LoadedPage {
@@ -28,12 +25,13 @@ pub struct LoadedPage {
     //assets
 }
 impl LoadedPage {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(storage: SharedStorage, path: PathBuf) -> Self {
         Self {
             _path: path.clone(),
             current_stroke: vec![],
             redraw_finished: false,
-            regions: RegionCache::new(LoadedPage),
+            // regions: RegionCache::new(LoadedPage),
+            regions: RegionCache::new(storage, path),
             clear_buffer_finished: true,
             clear_buffer_current: true,
         }
@@ -43,7 +41,8 @@ impl LoadedPage {
         self: &mut Self,
         top_left_pos: &Pos2,
     ) -> Vec<(i32, i32, usize, usize, &Chunk)> {
-        let mut out = Vec::new();
+        let items = Vec::new();
+        let mut out = items;
 
         let pixel_x = top_left_pos.x;
         let pixel_y = top_left_pos.y;
@@ -90,8 +89,7 @@ impl LoadedPage {
     pub fn add_stroke_point(&mut self, sp: StrokePoint) {
         self.current_stroke.push(sp);
     }
-    pub fn save_current_stroke(&mut self, state: &State) {
-        let pen = state.color_palette.pen.clone();
+    pub fn save_current_stroke(&mut self, pen: &Pen, top_left: Pos2) {
         let points = std::mem::take(&mut self.current_stroke);
 
         if points.is_empty() {
@@ -105,7 +103,7 @@ impl LoadedPage {
         self.distribute_stroke_into_chunks(stroke);
 
         self.redraw_finished = true;
-        let (rx, ry) = region_of_top_left(state.gpu_view.top_left);
+        let (rx, ry) = region_of_top_left(top_left);
         self.regions.save_region(rx, ry);
         self.regions.save_region(rx + 1, ry);
         self.regions.save_region(rx, ry + 1);
@@ -288,8 +286,6 @@ pub fn region_of_top_left(top_left_pos: Pos2) -> (i32, i32) {
 
     (rx, ry)
 }
-
-
 
 /*Premier plan théorique donné à copilot, p
 pub fn distribute_stroke_into_chunks(&mut self, stroke: PenStroke) {

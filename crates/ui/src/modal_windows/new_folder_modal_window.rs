@@ -7,13 +7,6 @@ use crate::{
     ui::modal_windows::modal_window::ModalWindow,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewFolderModalWindow {
-    pub parent: PathBuf,
-    pub folder_name: String,
-    pub display_name: String,
-}
-
 impl Default for NewFolderModalWindow {
     fn default() -> Self {
         Self {

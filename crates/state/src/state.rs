@@ -2,7 +2,17 @@ use std::path::PathBuf;
 
 use eframe::egui::{self, Pos2, Rect};
 use egui::Context;
+use fastnote_domain::{
+    modal_window::ModalWindow,
+    model::{
+        fastnote_project_manager::OpenedProjectsManager, loaded_page::LoadedPage,
+        pen::color_palette::ColorPalette,
+    },
+    storage::SharedStorage,
+};
 use serde::{Deserialize, Serialize};
+
+use crate::{gpu_view::GpuView, themes::ThemeData};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Deserialize, Serialize)]
 pub enum MenuMode {
@@ -65,9 +75,11 @@ pub struct State {
     pub current_pos_touchpad_pix: Option<Pos2>,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        let color_palette = ColorPalette::load().unwrap_or(ColorPalette::default());
+impl State {
+    fn load(storage: SharedStorage) -> Self {
+        let color_palette = storage
+            .load_color_palette_file()
+            .unwrap_or(ColorPalette::default());
         Self {
             top_level_rect_pix: None,
             gpu_rect_pix: None,
@@ -80,7 +92,7 @@ impl Default for State {
             // file_tree: FileTreeState::default(),
             modal_window: ModalWindow::None,
             cursor_icon: egui::CursorIcon::Default,
-            opened_projects: OpenedProjectsManager::default(),
+            opened_projects: OpenedProjectsManager::load(storage),
 
             current_fastnote_file: None,
             // current_fastnote_page: None,
@@ -97,14 +109,14 @@ impl Default for State {
 }
 
 impl State {
-    pub fn set_menu(&mut self, menu: MenuMode, ctx: &Context) {
-        if menu == MenuMode::Edition {
-            self.edition_open = true;
-            open_edition_mode(&mut self.theme, ctx, &mut self.edition_open);
-        } else {
-            self.menu_mode = menu
-        }
-    }
+    // pub fn set_menu(&mut self, menu: MenuMode, ctx: &Context) {
+    //     if menu == MenuMode::Edition {
+    //         self.edition_open = true;
+    //         open_edition_mode(&mut self.theme, ctx, &mut self.edition_open);
+    //     } else {
+    //         self.menu_mode = menu
+    //     }
+    // }
     pub fn get_menu(&self) -> MenuMode {
         self.menu_mode
     }
@@ -113,7 +125,8 @@ impl State {
         match loaded_page_opt {
             None => {}
             Some(mut loaded_page) => {
-                loaded_page.save_current_stroke(self);
+                loaded_page
+                    .save_current_stroke(&self.color_palette.pen, self.gpu_view.top_left.clone());
                 self.loaded_page = Some(loaded_page);
             }
         }

@@ -51,7 +51,7 @@ impl FastnoteFolder {
             storage: storage.clone(),
         };
         // folder.save()?;
-        storage.save_folder_file(&folder);
+        storage.save_folder_file(&folder)?;
         Ok(folder)
     }
     //Code "doublon", TODO: retirer

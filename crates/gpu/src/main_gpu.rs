@@ -1,10 +1,10 @@
 use bytemuck::{Pod, Zeroable};
 use eframe::egui::{self, Color32, Rect};
+use fastnote_domain::{geometry::color_to_rgb, model::region::CHUNKS_PER_REGION_X};
 
-use crate::{
-    app::App, color_to_rgb, gpu::main_renderer::MainCallback, projects::region::CHUNKS_PER_REGION_X,
-};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::main_renderer::MainCallback;
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]

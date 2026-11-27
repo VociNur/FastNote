@@ -1,7 +1,8 @@
-pub mod ui;
-pub mod middle;
-pub mod ribbon;
+pub mod edition;
 pub mod menu;
-pub mod top_bar;
-pub mod ui_gpu;
+pub mod middle;
 pub mod modal_windows;
+pub mod ribbon;
+pub mod top_bar;
+pub mod ui;
+pub mod ui_gpu;

@@ -3,13 +3,14 @@ use std::{
     time::Instant,
 };
 
-use eframe::egui::{self, Context, Pos2, Vec2};
+use eframe::egui::{self, Context, Pos2};
+use fastnote_domain::model::strokes::strokes::StrokePoint;
 use input::event::{
     pointer::ButtonState,
     tablet_tool::{ProximityState, TabletToolType, TipState},
 };
 
-use crate::{state::State, strokes::strokes::StrokePoint, stylet::stylet::StyletState};
+use crate::stylet::stylet::StyletState;
 
 #[derive(Default)]
 pub struct StyletManager {
@@ -183,7 +184,7 @@ impl StyletManager {
             if let Some(file) = state.loaded_page.as_mut() {
                 let draw_pos =
                     (pos - gpu_rect.min) / state.gpu_view.get_zoom() + state.gpu_view.top_left.to_vec2();
-                let stroke_point = StrokePoint::new(draw_pos.to_pos2(), pressure);
+                let stroke_point = StrokePoint::new(draw_pos, pressure);
                 if tool_type == TabletToolType::Pen {
                     file.add_stroke_point(stroke_point);
                     ctx.request_repaint_after_secs(0.1);
@@ -191,13 +192,13 @@ impl StyletManager {
                 } else if tool_type == TabletToolType::Eraser {
                     let t = Instant::now();
                     let epsilon_sq = 4.;
-                    if let Some(last_erase_pos) = self.last_erase_at_pos && last_erase_pos.distance_sq(draw_pos.to_pos2()) < epsilon_sq{
+                    if let Some(last_erase_pos) = self.last_erase_at_pos && last_erase_pos.distance_sq(draw_pos) < epsilon_sq{
                         println!("erase skip");
                         return;
                     }
-                    file.erase_at(draw_pos.to_pos2(), 2f32);
+                    file.erase_at(draw_pos, 2f32);
                     let elapsed = t.elapsed();
-                    self.last_erase_at_pos = Some(draw_pos.to_pos2());
+                    self.last_erase_at_pos = Some(draw_pos);
                     println!("Eraser timing: {:?}", elapsed);
                 } else {
                     println!("Tool type not defined");

@@ -4,11 +4,6 @@ use eframe::egui;
 
 use crate::{app::App, ui::modal_windows::modal_window::ModalWindow};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RenameModalWindow {
-    pub old_path: PathBuf,
-    pub new_name: String,
-}
 
 impl Default for RenameModalWindow {
     fn default() -> Self {

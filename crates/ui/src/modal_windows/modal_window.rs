@@ -11,17 +11,6 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ModalWindow {
-    None,
-    Taken,
-    NewProject(NewProjectModalWindow),
-    NewFolder(NewFolderModalWindow),
-    NewFile(NewFileModalWindow),
-    Rename(RenameModalWindow),
-    NewPage(NewPageModalWindow),
-}
-
 impl ModalWindow {
     pub fn take(&mut self) -> ModalWindow {
         std::mem::replace(self, ModalWindow::Taken)

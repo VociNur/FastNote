@@ -35,7 +35,10 @@ impl ColorPalette {
         // let json = serde_json::to_string_pretty(&self)?;
         // println!("Saving file: {:?}", self.path);
         // save_persistent_data(get_working_path().join(COLOR_PALETTE), &json);
-        self.storage.as_ref().unwrap().save_color_palette_file(&self);
+        self.storage
+            .as_ref()
+            .unwrap()
+            .save_color_palette_file(&self);
         Ok(())
     }
     #[deprecated(since = "0.2.0", note = "use sm instead")]
